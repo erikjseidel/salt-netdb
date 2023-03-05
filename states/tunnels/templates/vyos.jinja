@@ -1,0 +1,112 @@
+
+delete interfaces tunnel
+
+{%- for tunnel, meta in data['out'].items() %}
+
+set interfaces tunnel {{ tunnel }} address {{ meta['ipv4_address'] }}
+set interfaces tunnel {{ tunnel }} address {{ meta['ipv6_address'] }}
+
+{%-     if ( meta['disabled'] ) %}
+
+set interfaces tunnel {{ tunnel }} disable
+
+{%-     endif %}
+{%-     if ( meta['description'] is defined ) %}
+
+set interfaces tunnel {{ tunnel }} description "{{ meta['description'] }}"
+
+{%-     endif %}
+{%-     if meta['type'] == 'l2gre' %}
+
+set interfaces tunnel {{ tunnel }} encapsulation gretap
+
+{%-     else %}
+
+set interfaces tunnel {{ tunnel }} encapsulation {{ meta['type'] }}
+
+{%-     endif %}
+{%-     if ( meta['mtu'] is defined ) %}
+
+set interfaces tunnel {{ tunnel }} mtu {{ meta['mtu'] }}
+
+{%-     else %}
+{%-         if meta['type'] == 'l2gre' %}
+
+set interfaces tunnel {{ tunnel }} mtu 1458
+
+{%-         endif %}
+
+set interfaces tunnel {{ tunnel }} mtu 1476
+
+{%-     endif %}
+{%-     if ( meta['ttl'] is defined ) %}
+
+set interfaces tunnel {{ tunnel }} parameters ip ttl {{ meta['ttl'] }}
+
+{%-     endif %}
+
+set interfaces tunnel {{ tunnel }} remote {{ meta['remote'] }}
+
+{%-     if ( meta['source'] is defined ) %}
+
+set interfaces tunnel {{ tunnel }} source-address {{ meta['source'] }}
+
+{%-     endif %}
+{%-     if ( meta['interface'] is defined ) %}
+
+set interfaces tunnel {{ tunnel }} source-interface {{ meta['interface'] }}
+
+{%-     endif %}
+{# 
+    Stateless firewall (ACL) configuration
+#}
+{%-     if ( meta['firewall'] is defined ) %}
+{#  
+       Rules for control plane connections  
+#}
+{%-         if ( meta['firewall']['local'] is defined ) %}
+{%-             if ( meta['firewall']['local']['ipv4'] is defined ) %}
+
+set interfaces tunnel {{ tunnel }} firewall local name {{ meta['firewall']['local']['ipv4'] }}
+
+{%-             endif %}
+{%-             if ( meta['firewall']['local']['ipv6'] is defined ) %}
+
+set interfaces tunnel {{ tunnel }} firewall local ipv6-name {{ meta['firewall']['local']['ipv6'] }}
+
+{%-             endif %}
+{%-         endif %}
+{#    
+       Rules for ingress forwarding  
+#}
+{%-         if ( meta['firewall']['ingress'] is defined ) %}
+{%-             if ( meta['firewall']['ingress']['ipv4'] is defined ) %}
+
+set interfaces tunnel {{ tunnel }} firewall in name {{ meta['firewall']['ingress']['ipv4'] }}
+
+{%-             endif %}
+{%-             if ( meta['firewall']['ingress']['ipv6'] is defined ) %}
+
+set interfaces tunnel {{ tunnel }} firewall in ipv6-name {{ meta['firewall']['ingress']['ipv6'] }}
+
+{%-             endif %}
+{%-         endif %}
+{#  
+       Rules for egress forwarding  
+#}
+{%-         if ( meta['firewall']['egress'] is defined ) %}
+{%-             if ( meta['firewall']['egress']['ipv4'] is defined ) %}
+
+set interfaces tunnel {{ tunnel }} firewall out name {{ meta['firewall']['egress']['ipv4'] }}
+
+{%-             endif %}
+{%-             if ( meta['firewall']['egress']['ipv6'] is defined ) %}
+
+set interfaces tunnel {{ tunnel }} firewall out ipv6-name {{ meta['firewall']['egress']['ipv6'] }}
+
+{%-             endif %}
+{%-         endif %}
+{%-     endif %}
+{%- endfor %}
+
+comment interfaces 'The following interface nodes are SALT MANAGED: tunnel'

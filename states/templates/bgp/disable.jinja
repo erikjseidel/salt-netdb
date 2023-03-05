@@ -1,0 +1,5 @@
+
+{%- for family in families %}
+set protocols bgp {{ grains.local_asn }} neighbor {{ peer }} address-family {{ family }}-unicast route-map import REJECT-ALL
+set protocols bgp {{ grains.local_asn }} neighbor {{ peer }} address-family {{ family }}-unicast route-map export REJECT-ALL
+{%- endfor %}

@@ -1,0 +1,5 @@
+
+delete protocols bgp {{ grains.local_asn }} neighbor {{ peer }} address-family ipv4-unicast route-map import REJECT-ALL
+delete protocols bgp {{ grains.local_asn }} neighbor {{ peer }} address-family ipv4-unicast route-map export REJECT-ALL
+delete protocols bgp {{ grains.local_asn }} neighbor {{ peer }} address-family ipv6-unicast route-map import REJECT-ALL
+delete protocols bgp {{ grains.local_asn }} neighbor {{ peer }} address-family ipv6-unicast route-map export REJECT-ALL

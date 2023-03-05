@@ -1,0 +1,110 @@
+
+delete protocols bgp
+
+set protocols bgp {{ grains.local_asn }} parameters default no-ipv4-unicast
+set protocols bgp {{ grains.local_asn }} parameters graceful-restart
+
+{%- for group_name, group_data in data['out'].items() %}
+{%-     if 'router_id' in group_data %}
+
+set protocols bgp {{ grains.local_asn }} parameters router-id {{ group_data['router_id'] }}
+
+{%-     endif %}
+{%-     if 'log_neighbor_changes' in group_data and group_data['log_neighbor_changes'] %}
+
+set protocols bgp {{ grains.local_asn }} parameters log-neighbor-changes
+
+{%-     endif %}
+{%-     if 'timers' in group_data %}
+{%-         if 'hold' in group_data['timers'] %}
+
+set protocols bgp {{ grains.local_asn }} timers holdtime {{ group_data['timers']['hold'] }}
+
+{%-         endif %}
+{%-         if 'keepalive' in group_data['timers'] %}
+
+set protocols bgp {{ grains.local_asn }} timers keepalive {{ group_data['timers']['keepalive'] }}
+
+{%-         endif %}
+{%-     endif %}
+{%-     if group_data['family'] is defined %}
+{%-         for family_name, family_data in group_data['family'].items() %}
+{%-             if family_data['networks'] is defined %}
+{%-                 for network_name, network_data in family_data['networks'].items() %}
+
+set protocols bgp {{ grains.local_asn }} address-family {{ family_name }}-unicast network {{ network_name }}
+
+{%-                 endfor %}
+{%-             endif %}
+{%-             if family_data['redistribute'] is defined %}
+{%-                 for redistribute_name, redistribute_data in family_data['redistribute'].items() %}
+
+set protocols bgp {{ grains.local_asn }} address-family {{ family_name }}-unicast redistribute {{ redistribute_name }}
+
+{%-                 endfor %}
+{%-             endif %}
+{%-         endfor %}
+{%-     endif %}
+{%-     if 'peer_groups' in group_data %}
+{%-         for peer_group_name, peer_group_data in group_data['peer_groups'].items() %}
+{%-             if peer_group_data['source'] is defined %}
+
+set protocols bgp {{ grains.local_asn }} peer-group {{ peer_group_name }} update-source {{ peer_group_data['source'] }}
+
+{%-             endif %}
+{%-             if peer_group_data['password'] is defined %}
+
+set protocols bgp {{ grains.local_asn }} peer-group {{ peer_group_name }} password {{ peer_group_data['password'] }}
+
+{%-             endif %}
+{%-             if peer_group_data['type'] is defined and peer_group_data['type'] == 'ibgp' %}
+
+set protocols bgp {{ grains.local_asn }} peer-group {{ peer_group_name }} remote-as internal
+
+{%-             else %}
+{%-                 if peer_group_data['remote_asn'] is defined %}
+
+set protocols bgp {{ grains.local_asn }} peer-group {{ peer_group_name }} remote-as {{ peer_group_data['remote_asn'] }}
+
+{%-                 endif %}
+{%-                 if peer_group_data['multihop'] is defined %}
+
+set protocols bgp {{ grains.local_asn }} peer-group {{ peer_group_name }} ebgp-multihop {{ peer_group_data['multihop'] }}
+
+{%-                 endif %}
+{%-             endif %}
+
+
+{%-             if peer_group_data['family'] is defined %}
+{%-                 for family_name, family_data in peer_group_data['family'].items() %}
+{%-                     if family_data['nhs'] is defined and family_data['nhs'] %}
+
+set protocols bgp {{ grains.local_asn }} peer-group {{ peer_group_name }} address-family {{ family_name }}-unicast nexthop-self
+
+{%-                     endif %}
+{%-                     if family_data['route_map'] is defined %}
+{%-                         for route_map_name, route_map_data in family_data['route_map'].items() %}
+
+set protocols bgp {{ grains.local_asn }} peer-group {{ peer_group_name }} address-family {{ family_name }}-unicast route-map {{ route_map_name }} {{ route_map_data }}
+
+{%-                         endfor %}
+{%-                     endif %}
+{%-                 endfor %}
+{%-             endif %}
+{%-         endfor %}
+{%-     endif %}
+{%-     if 'neighbors' in group_data %}
+{%-         for name, settings in group_data['neighbors'].items() %}
+
+set protocols bgp {{ grains.local_asn }} neighbor {{ name }}
+
+{%-             if 'peer_group' in settings %}
+
+set protocols bgp {{ grains.local_asn }} neighbor {{ name }} peer-group {{ settings['peer_group'] }}
+
+{%-             endif %}
+{%-         endfor %}
+{%-     endif %}
+{%- endfor %}
+
+comment protocols bgp {{ grains.local_asn }}  'Node protocols bgp is SALT MANAGED'

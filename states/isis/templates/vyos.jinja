@@ -1,0 +1,46 @@
+
+delete protocols isis
+
+{%- set isis = data['out'] %}
+{%- for interface in isis['interfaces'] %}
+{%-     if interface['passive'] is defined and interface['passive'] %}
+
+set protocols isis interface {{ interface['name'] }} passive
+
+{%-     elif interface['passive'] is defined %}
+
+{%-     else %}
+
+set protocols isis interface {{ interface['name'] }}
+
+{%-     endif %}
+{%- endfor %}
+
+set protocols isis net {{ isis['iso'] }}
+set protocols isis level 'level-{{ isis['level'] }}'
+set protocols isis lsp-mtu {{ isis['lsp_mtu'] }}
+
+{%- for family, data in isis['redistribute'].items() %}
+{%-     if data['level_2'] is defined %}
+{%-         if data['level_2']['metric'] is defined %}
+
+set protocols isis redistribute {{ family }} connected level-2 metric {{ data['level_2']['metric'] }}
+
+{%-         endif %}
+
+set protocols isis redistribute {{ family }} connected level-2 route-map {{ data['level_2']['connected_map'] }}
+
+{%-     endif %}
+{%-     if data['level_1'] is defined %}
+{%-         if data['level_1']['metric'] is defined %}
+
+set protocols isis redistribute {{ family }} connected level-1 metric {{ data['level_1']['metric'] }}
+
+{%-         endif %}
+
+set protocols isis redistribute {{ family }} connected level-1 route-map {{ data['level_1']['connected_map'] }}
+
+{%-     endif %}
+{%- endfor %}
+
+comment protocols isis  'Node protocols isis is SALT MANAGED'

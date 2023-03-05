@@ -1,0 +1,158 @@
+
+delete firewall
+delete zone-policy
+
+{%- set port_list = namespace(list='') %}
+
+{%- for set_name, meta in data['out'].items() %}
+{%-     if ( meta['options'] is defined ) %}
+{%-         for option, value in meta['options'].items() %}
+
+set firewall {{ option }} {{ value }}
+
+{%-         endfor %}
+{%-     endif %}
+{%-     if ( meta['state_policy'] is defined ) %}
+{%-         if ( meta['state_policy']['established'] is defined ) %}
+
+set firewall state-policy established action {{ meta['state_policy']['established'] }}
+
+{%-         endif %}
+{%-         if ( meta['state_policy']['related'] is defined ) %}
+
+set firewall state-policy related action {{ meta['state_policy']['related'] }}
+
+{%-         endif %}
+{%-     endif %}
+{%-     if ( meta['mss_clamp'] is defined ) %}
+{%-         for interface in meta['mss_clamp']['interfaces'] %}
+
+set firewall options interface {{ interface }} adjust-mss {{ meta['mss_clamp']['ipv4'] }}
+set firewall options interface {{ interface }} adjust-mss6 {{ meta['mss_clamp']['ipv6'] }}
+
+{%-         endfor %}
+{%-     endif %}
+{%-     if ( meta['groups'] is defined ) %}
+{%-         for family in meta['groups'] %}
+{%-             for group, group_data in meta['groups'][family].items() %}
+{%-                 if ( group_data['networks'] is defined ) %}
+{%-                     for network in group_data['networks'] %}
+{%-                         if ( family == 'ipv4' ) %}
+
+set firewall group network-group {{ group }} network {{ network }}
+
+{%-                         else %}
+
+set firewall group ipv6-network-group {{ group }} network {{ network }}
+
+{%-                         endif %}
+{%-                     endfor %}
+{%-                 endif %}
+{%-             endfor %}
+{%-         endfor %}
+{%-     endif %}
+{%-     if ( meta['policies'] is defined ) %}
+{%-         for family in meta['policies'] %}
+{%-             set header = ''          %}
+{%-             if ( family == 'ipv6' )  %}
+{%-                 set header = 'ipv6-' %}
+{%              endif %}
+{%-             for policy, policy_data in meta['policies'][family].items() %}
+{%-                 if ( policy_data['default_action'] is defined ) %}
+
+set firewall {{ header }}name {{ policy }} default-action {{ policy_data['default_action'] }}
+
+{%-                 endif %}
+
+{%-                 if ( policy_data['rules'] is defined ) %}
+{%-                     for rule in policy_data['rules'] %}
+{%-                         set priority = loop.index * 5 %}
+
+set firewall {{ header }}name {{ policy }} rule {{ priority }} action {{ rule['action'] }}
+
+{%-                         if ( rule['state'] is defined ) %}
+{%-                             for state in rule['state'] %}
+
+set firewall {{ header }}name {{ policy }} rule {{ priority }} state {{ state }} enable
+
+{%-                             endfor %}
+{%-                         endif %}
+{%-                         if ( rule['protocol'] is defined ) %}
+
+set firewall {{ header }}name {{ policy }} rule {{ priority }} protocol {{ rule['protocol'] }}
+
+{%-                         endif %}
+{%-                         if ( rule['source'] is defined ) %}
+{%-                             if ( rule['source'][0]['network_group'] is defined ) %}
+
+set firewall {{ header }}name {{ policy }} rule {{ priority }} source group network-group {{ rule['source'][0]['network_group'] }}
+
+{%-                             endif %}
+
+{%-                             if ( rule['source'][0]['port'] is defined ) %}
+{%-                                 set port_list.list = '' %}
+{%-                                 for port in rule['destination'][0]['port'] %}
+{%-                                     if loop.index == 1 %}
+{%-                                         set port_list.list = port %}
+{%-                                     else %}
+{%-                                         set port_list.list = port_list.list ~ ',' ~ port %}
+{%-                                     endif %}
+{%-                                 endfor %}
+
+set firewall {{ header }}name {{ policy }} rule {{ priority }} source port '{{ port_list.list }}'
+
+{%-                             endif %}
+{%-                         endif %}
+{%-                         if ( rule['destination'] is defined ) %}
+{%-                             if ( rule['destination'][0]['network_group'] is defined ) %}
+
+set firewall {{ header }}name {{ policy }} rule {{ priority }} destination group network-group {{ rule['destination'][0]['network_group'] }}
+
+{%-                             endif %}
+{%-                             if ( rule['destination'][0]['port'] is defined ) %}
+{%-                                 set port_list.list = '' %}
+{%-                                 for port in rule['destination'][0]['port'] %}
+{%-                                     if loop.index == 1 %}
+{%-                                         set port_list.list = port %}
+{%-                                     else %}
+{%-                                         set port_list.list = port_list.list ~ ',' ~ port %}
+{%-                                     endif %}
+{%-                                 endfor %}
+
+set firewall {{ header }}name {{ policy }} rule {{ priority }} destination port '{{ port_list.list }}'
+
+{%-                             endif %}
+{%-                         endif %}
+{%-                     endfor %}
+{%-                 endif %}
+{%-             endfor %}
+{%-         endfor %}
+{%-     endif %}
+{%-     if ( meta['zone_policy'] is defined ) %}
+{%-         for zone, zone_data in meta['zone_policy']['zone'].items() %}
+{%-             if ( zone_data['default-action'] is defined ) %}
+
+set zone-policy zone {{ zone }} default-action {{ zone_data['default_action'] }}
+
+{%-             endif %}
+{%-             if ( zone_data['from'] is defined ) %}
+{%-                 for from_rule in zone_data['from'] %}
+
+set zone-policy zone {{ zone }} from {{ from_rule['zone'] }} firewall ipv6-name {{ from_rule['ipv6_ruleset'] }}
+set zone-policy zone {{ zone }} from {{ from_rule['zone'] }} firewall name {{ from_rule['ipv4_ruleset'] }}
+
+{%-                 endfor %}
+{%-             endif %}
+{%-             if ( zone_data['interfaces'] is defined ) %}
+{%-                 for interface in zone_data['interfaces'] %}
+
+set zone-policy zone {{ zone }} interface {{ interface }}
+
+{%-                 endfor %}
+{%-             endif %}
+{%-         endfor %}
+{%-     endif %}
+{%- endfor %}
+
+comment firewall 'Node firewall is SALT MANAGED'
+comment zone-policy 'Node zone-policy is SALT MANAGED'
