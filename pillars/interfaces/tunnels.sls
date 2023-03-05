@@ -4,7 +4,6 @@
 
 #}
 
-{%- set node = pillar.node %}
 znsl_tunnels:
   SIN1:
     tun370:
