@@ -63,7 +63,6 @@ def _is_marked_disabled(peer):
     """
     Checks if a BGP peer is disabled. Wrapper around generic net_redis entry functions.
     """
-
     return __salt__['net_redis.check_entry'](_REDIS_KEY, peer)
 
 
@@ -278,6 +277,7 @@ def summary(family='both'):
 
     A list of the router's salt managed BGP peers is also displayed in the comment.
 
+    :param family: Show peers with 'ipv4', 'ipv6' families configured or 'both' (default)
     :return: a dictionary consisting of the following keys:
 
        * result: (bool) True if interface information returned; false otherwise

@@ -23,8 +23,6 @@ def _is_marked_disabled(interface):
     """
     Checks if an IS-IS interface is disabled. Wrapper around generic net_redis entry functions. 
     """
-    isis_interfaces = __pillar__[_PILLAR]['interfaces']
-
     return __salt__['net_redis.check_entry'](_REDIS_KEY, interface)
 
 

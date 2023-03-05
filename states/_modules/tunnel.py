@@ -24,7 +24,6 @@ def _is_marked_disabled(tunnel):
     """
     Checks if a tunnel is disabled. Wrapper around generic net_redis entry functions.
     """
-
     return __salt__['net_redis.check_entry'](_REDIS_KEY, tunnel)
 
 
