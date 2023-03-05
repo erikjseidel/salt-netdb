@@ -31,7 +31,6 @@ def _remove_disable_mark(tunnel):
     """
     Removes a tunnel from the disabled list. Wrapper around generic net_redis entry functions.
     """
-    router = __grains__['id']
     tunnels = __pillar__[_PILLAR][router].keys()
 
     if not tunnel:
@@ -47,7 +46,6 @@ def _mark_disabled_tunnel(tunnel):
     """
     Adds a tunnel to disabled list. Wrapper around generic net_redis entry functions.
     """
-    router = __grains__['id']
     tunnels = __pillar__[_PILLAR][router].keys()
 
     if not tunnel:

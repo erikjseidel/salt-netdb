@@ -30,7 +30,6 @@ def _remove_disable_mark(interface):
     """
     Removes an IS-IS interface disabled list. Wrapper around generic net_redis entry functions.
     """
-    router = __grains__['id']
     isis_interfaces = __pillar__[_PILLAR]['interfaces']
 
     if not interface:
@@ -46,7 +45,6 @@ def _mark_disabled_iface(interface):
     """
     Adds an IS-IS interface disabled list. Wrapper around generic net_redis entry functions.
     """
-    router = __grains__['id']
     isis_interfaces = __pillar__[_PILLAR]['interfaces']
 
     if not interface:

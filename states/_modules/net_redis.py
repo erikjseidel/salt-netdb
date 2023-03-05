@@ -128,23 +128,23 @@ def remove_entry(key, entry):
     """
     router = __grains__['id']
 
-    already_marked = False
+    already_exists = False
 
     entries = _get_kv(key)
 
     if entries['out'] != None:
         if router in entries['out']:
             if entry in entries['out'][router]:
-                already_marked = True
+                already_exists = True
 
-    if already_marked:
+    if already_exists:
         entries['out'][router].remove(entry)
 
         _set_kv(key, entries['out'])
 
-        return { "result": True, "comment": 'Entry disable mark cleared', 'out': entries['out'][router] }
+        return { "result": True, "comment": 'Entry removed', 'out': entries['out'][router] }
 
-    return { "result": False, "comment": "Entry not marked a disabled"}
+    return { "result": False, "comment": "Entry not found"}
 
 
 def get_entries(key):
@@ -165,7 +165,7 @@ def get_entries(key):
         if router in entries['out'].keys():
             return { 'return': True, 'out': entries['out'][router] }
 
-    return { 'return': False, 'comment': 'No disabled entries found', 'out': [] }
+    return { 'return': False, 'comment': 'No entries found', 'out': [] }
 
 
 def check_entry(key, entry):

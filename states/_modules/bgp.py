@@ -70,7 +70,6 @@ def _remove_disable_mark(peer):
     """
     Removes a BGP peer is in the disabled list. Wrapper around generic net_redis entry functions.
     """
-    router = __grains__['id']
     bgp_peers = _get_peers()['out']
 
     if not peer:
@@ -86,7 +85,6 @@ def _mark_disabled_peer(peer):
     """
     Adds a BGP peer to the disabled list. Wrapper around generic net_redis entry functions.
     """
-    router = __grains__['id']
     bgp_peers = _get_peers()['out']
 
     if not peer:
