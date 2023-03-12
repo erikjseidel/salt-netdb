@@ -1,20 +1,21 @@
 base:
-  sin1-nm:
-    - proxies/sin1-nm
-  sin1-proxy:
-    - proxies/sin1-proxy
+  sin1:
+    - proxies/sin1
     - node/sin1/firewall
     - node/sin1/policy
     - node/sin1/bgp
-  sin2-proxy:
-    - proxies/sin2-proxy
+  sin2:
+    - proxies/sin2
     - node/sin2/isis
     - node/sin2/bgp
-  sin3-proxy:
-    - proxies/sin3-proxy
+  sin3:
+    - proxies/sin3
     - node/sin3/isis
     - node/sin3/bgp
-  '*-proxy':
+  fra1:
+    - proxies/fra1
+    - node/fra1/isis
+  '*':
     - interfaces/tunnels
     - firewall
     - policy
