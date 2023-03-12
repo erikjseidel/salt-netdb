@@ -261,7 +261,7 @@ def disable(interface, test=False, debug=False, force=False):
             if "bond" in parent:
                 parent_type = "bonding "
 
-            statement = parent_type + parent + " vif " + vlan_id
+            statement = parent_type + parent + " vif " + str(vlan_id)
 
         elif type == 'lacp':
             statement = "bonding " + interface

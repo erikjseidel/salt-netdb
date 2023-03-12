@@ -1,0 +1,50 @@
+
+delete interfaces dummy
+
+{%- for lo, lo_data in data['out'].items() %}
+
+{%-     if lo_data['address'] is defined %}
+{%-         for addr, addr_data in lo_data['address'].items() %}
+
+set interfaces dummy {{ lo }} address {{ addr }}
+
+{%-         endfor %}
+{%-     endif %}
+
+{%-     if ( lo_data['disabled'] is defined ) %}
+{%-         if ( lo_data['disabled'] ) %}
+
+set interfaces dummy {{ lo }} disable
+
+{%-         endif %}
+{%-     endif %}
+{%-     if ( lo_data['description'] is defined ) %}
+
+set interfaces dummy {{ lo }} description "{{ lo_data['description'] }}"
+
+{%-     endif %}
+
+{# 
+    Stateless firewall (ACL) configuration
+#}
+{%-     if ( lo_data['firewall'] is defined ) %}
+{#  
+       Rules for control plane connections  
+#}
+{%-         if ( lo_data['firewall']['local'] is defined ) %}
+{%-             if ( lo_data['firewall']['local']['ipv4'] is defined ) %}
+
+set interfaces dummy {{ lo }} firewall local name {{ lo_data['firewall']['local']['ipv4'] }}
+
+{%-             endif %}
+{%-             if ( lo_data['firewall']['local']['ipv6'] is defined ) %}
+
+set interfaces dummy {{ lo }} firewall local ipv6-name {{ lo_data['firewall']['local']['ipv6'] }}
+
+{%-             endif %}
+{%-         endif %}
+{%-     endif %}
+
+comment interfaces dummy {{ lo }} '{{ lo }} is managed by salt.'
+
+{%- endfor %}

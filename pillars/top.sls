@@ -18,6 +18,7 @@ base:
   '*':
     - interfaces/tunnels
     - interfaces/ethernet
+    - interfaces/loopback
     - firewall
     - policy
     - isis
