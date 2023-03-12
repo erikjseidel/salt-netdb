@@ -482,6 +482,7 @@ znsl_tunnels:
       firewall:
         local:
           ipv4: INTERNAL-LOCAL
+          ipv6: 6-INTERNAL-LOCAL
 
     tun46:
       address:
@@ -511,6 +512,7 @@ znsl_tunnels:
       firewall:
         local:
           ipv4: INTERNAL-LOCAL
+          ipv6: 6-INTERNAL-LOCAL
 
     tun203:
       address:
@@ -539,6 +541,7 @@ znsl_tunnels:
       firewall:
         local:
           ipv4: INTERNAL-LOCAL
+          ipv6: 6-INTERNAL-LOCAL
 
     tun205:
       address:
@@ -567,3 +570,4 @@ znsl_tunnels:
       firewall:
         local:
           ipv4: INTERNAL-LOCAL
+          ipv6: 6-INTERNAL-LOCAL
