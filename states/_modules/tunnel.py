@@ -2,6 +2,7 @@
 
 import logging
 import copy
+import socket, struct
 
 __virtualname__ = "tunnel"
 
@@ -19,6 +20,12 @@ def __virtual__():
     else:
         return ( False, 'No salt managed tunnels found on this router. Module not loaded.' )
 
+def _ip2long(ip):
+    """
+    Convert an IP string to long
+    """
+    packedIP = socket.inet_aton(ip)
+    return struct.unpack("!L", packedIP)[0]
 
 def _is_marked_disabled(tunnel):
     """
@@ -106,6 +113,9 @@ def generate():
             settings['disabled'] = True
         else:
             settings['disabled'] = False
+
+        if 'key' in settings:
+            settings['key_vyos'] = _ip2long(settings['key'])
 
     ret.update({'result': True, 'out': ret_tunnels})
 

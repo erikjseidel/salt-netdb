@@ -17,6 +17,7 @@ base:
     - node/fra1/isis
   '*':
     - interfaces/tunnels
+    - interfaces/ethernet
     - firewall
     - policy
     - isis

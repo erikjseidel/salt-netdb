@@ -1,36 +1,41 @@
 
 delete interfaces tunnel
 
-{%- for tunnel, meta in data['out'].items() %}
+{%- for tunnel, tunnel_data in data['out'].items() %}
 
-set interfaces tunnel {{ tunnel }} address {{ meta['ipv4_address'] }}
-set interfaces tunnel {{ tunnel }} address {{ meta['ipv6_address'] }}
+{%-     if tunnel_data['address'] is defined %}
+{%-         for addr, addr_data in tunnel_data['address'].items() %}
 
-{%-     if ( meta['disabled'] ) %}
+set interfaces tunnel {{ tunnel }} address {{ addr }}
+
+{%-         endfor %}
+{%-     endif %}
+
+{%-     if ( tunnel_data['disabled'] ) %}
 
 set interfaces tunnel {{ tunnel }} disable
 
 {%-     endif %}
-{%-     if ( meta['description'] is defined ) %}
+{%-     if ( tunnel_data['description'] is defined ) %}
 
-set interfaces tunnel {{ tunnel }} description "{{ meta['description'] }}"
+set interfaces tunnel {{ tunnel }} description "{{ tunnel_data['description'] }}"
 
 {%-     endif %}
-{%-     if meta['type'] == 'l2gre' %}
+{%-     if tunnel_data['type'] == 'l2gre' %}
 
 set interfaces tunnel {{ tunnel }} encapsulation gretap
 
 {%-     else %}
 
-set interfaces tunnel {{ tunnel }} encapsulation {{ meta['type'] }}
+set interfaces tunnel {{ tunnel }} encapsulation {{ tunnel_data['type'] }}
 
 {%-     endif %}
-{%-     if ( meta['mtu'] is defined ) %}
+{%-     if ( tunnel_data['mtu'] is defined ) %}
 
-set interfaces tunnel {{ tunnel }} mtu {{ meta['mtu'] }}
+set interfaces tunnel {{ tunnel }} mtu {{ tunnel_data['mtu'] }}
 
 {%-     else %}
-{%-         if meta['type'] == 'l2gre' %}
+{%-         if tunnel_data['type'] == 'l2gre' %}
 
 set interfaces tunnel {{ tunnel }} mtu 1458
 
@@ -39,74 +44,82 @@ set interfaces tunnel {{ tunnel }} mtu 1458
 set interfaces tunnel {{ tunnel }} mtu 1476
 
 {%-     endif %}
-{%-     if ( meta['ttl'] is defined ) %}
+{%-     if ( tunnel_data['key_vyos'] is defined ) %}
 
-set interfaces tunnel {{ tunnel }} parameters ip ttl {{ meta['ttl'] }}
+set interfaces tunnel {{ tunnel }} parameters ip key {{ tunnel_data['key_vyos'] }}
+
+{%-     endif %}
+{%-     if ( tunnel_data['ttl'] is defined ) %}
+
+set interfaces tunnel {{ tunnel }} parameters ip ttl {{ tunnel_data['ttl'] }}
 
 {%-     endif %}
 
-set interfaces tunnel {{ tunnel }} remote {{ meta['remote'] }}
+set interfaces tunnel {{ tunnel }} remote {{ tunnel_data['remote'] }}
 
-{%-     if ( meta['source'] is defined ) %}
+{%-     if ( tunnel_data['source'] is defined ) %}
 
-set interfaces tunnel {{ tunnel }} source-address {{ meta['source'] }}
+set interfaces tunnel {{ tunnel }} source-address {{ tunnel_data['source'] }}
 
 {%-     endif %}
-{%-     if ( meta['interface'] is defined ) %}
+{%-     if ( tunnel_data['interface'] is defined ) %}
 
-set interfaces tunnel {{ tunnel }} source-interface {{ meta['interface'] }}
+set interfaces tunnel {{ tunnel }} source-interface {{ tunnel_data['interface'] }}
 
 {%-     endif %}
 {# 
     Stateless firewall (ACL) configuration
 #}
-{%-     if ( meta['firewall'] is defined ) %}
+{%-     if ( tunnel_data['firewall'] is defined ) %}
 {#  
        Rules for control plane connections  
 #}
-{%-         if ( meta['firewall']['local'] is defined ) %}
-{%-             if ( meta['firewall']['local']['ipv4'] is defined ) %}
+{%-         if ( tunnel_data['firewall']['local'] is defined ) %}
+{%-             if ( tunnel_data['firewall']['local']['ipv4'] is defined ) %}
 
-set interfaces tunnel {{ tunnel }} firewall local name {{ meta['firewall']['local']['ipv4'] }}
+set interfaces tunnel {{ tunnel }} firewall local name {{ tunnel_data['firewall']['local']['ipv4'] }}
 
 {%-             endif %}
-{%-             if ( meta['firewall']['local']['ipv6'] is defined ) %}
+{%-             if ( tunnel_data['firewall']['local']['ipv6'] is defined ) %}
 
-set interfaces tunnel {{ tunnel }} firewall local ipv6-name {{ meta['firewall']['local']['ipv6'] }}
+set interfaces tunnel {{ tunnel }} firewall local ipv6-name {{ tunnel_data['firewall']['local']['ipv6'] }}
 
 {%-             endif %}
 {%-         endif %}
 {#    
        Rules for ingress forwarding  
 #}
-{%-         if ( meta['firewall']['ingress'] is defined ) %}
-{%-             if ( meta['firewall']['ingress']['ipv4'] is defined ) %}
+{%-         if ( tunnel_data['firewall']['ingress'] is defined ) %}
+{%-             if ( tunnel_data['firewall']['ingress']['ipv4'] is defined ) %}
 
-set interfaces tunnel {{ tunnel }} firewall in name {{ meta['firewall']['ingress']['ipv4'] }}
+set interfaces tunnel {{ tunnel }} firewall in name {{ tunnel_data['firewall']['ingress']['ipv4'] }}
 
 {%-             endif %}
-{%-             if ( meta['firewall']['ingress']['ipv6'] is defined ) %}
+{%-             if ( tunnel_data['firewall']['ingress']['ipv6'] is defined ) %}
 
-set interfaces tunnel {{ tunnel }} firewall in ipv6-name {{ meta['firewall']['ingress']['ipv6'] }}
+set interfaces tunnel {{ tunnel }} firewall in ipv6-name {{ tunnel_data['firewall']['ingress']['ipv6'] }}
 
 {%-             endif %}
 {%-         endif %}
 {#  
        Rules for egress forwarding  
 #}
-{%-         if ( meta['firewall']['egress'] is defined ) %}
-{%-             if ( meta['firewall']['egress']['ipv4'] is defined ) %}
+{%-         if ( tunnel_data['firewall']['egress'] is defined ) %}
+{%-             if ( tunnel_data['firewall']['egress']['ipv4'] is defined ) %}
 
-set interfaces tunnel {{ tunnel }} firewall out name {{ meta['firewall']['egress']['ipv4'] }}
+set interfaces tunnel {{ tunnel }} firewall out name {{ tunnel_data['firewall']['egress']['ipv4'] }}
 
 {%-             endif %}
-{%-             if ( meta['firewall']['egress']['ipv6'] is defined ) %}
+{%-             if ( tunnel_data['firewall']['egress']['ipv6'] is defined ) %}
 
-set interfaces tunnel {{ tunnel }} firewall out ipv6-name {{ meta['firewall']['egress']['ipv6'] }}
+set interfaces tunnel {{ tunnel }} firewall out ipv6-name {{ tunnel_data['firewall']['egress']['ipv6'] }}
 
 {%-             endif %}
 {%-         endif %}
 {%-     endif %}
+
+comment interfaces tunnel {{ tunnel }} '{{ tunnel }} is managed by salt.'
+
 {%- endfor %}
 
-comment interfaces 'The following interface nodes are SALT MANAGED: tunnel'
+comment interfaces 'The following interface nodes are fully SALT MANAGED: tunnel'
