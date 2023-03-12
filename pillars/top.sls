@@ -15,6 +15,15 @@ base:
   fra1:
     - proxies/fra1
     - node/fra1/isis
+  dfw2:
+    - proxies/dfw2
+    - node/dfw2/isis
+  dfw3:
+    - proxies/dfw3
+    - node/dfw3/isis
+  mci3:
+    - proxies/mci3
+    - node/mci3/isis
   '*':
     - interfaces/tunnels
     - interfaces/ethernet
