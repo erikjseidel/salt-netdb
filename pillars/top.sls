@@ -21,9 +21,21 @@ base:
   dfw3:
     - proxies/dfw3
     - node/dfw3/isis
+  dfw4:
+    - proxies/dfw4
+    - node/dfw4/isis
+    - node/dfw4/firewall
+  mci2:
+    - proxies/mci2
+    - node/mci2/isis
   mci3:
     - proxies/mci3
     - node/mci3/isis
+  aus4:
+    - proxies/aus4
+    - node/aus4/firewall
+    - node/aus4/policy
+    - node/aus4/bgp
   '*':
     - interfaces/tunnels
     - interfaces/ethernet
