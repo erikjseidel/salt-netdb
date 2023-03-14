@@ -8,6 +8,19 @@ delete interfaces {{ vyos_type }} {{ interface }}
 delete interfaces {{ iface_data['vlan']['parent_vyos_type'] }} {{ iface_data['vlan']['parent'] }} vif {{ iface_data['vlan']['id'] }}
 {%-     endif %}
 
+{%-     if vyos_type == 'ethernet' %}
+{%-         if iface_data['offload'] is defined %}
+{%-             if iface_data['offload'] %}
+
+set interfaces ethernet {{ interface }} offload gro
+set interfaces ethernet {{ interface }} offload gso
+set interfaces ethernet {{ interface }} offload sg
+set interfaces ethernet {{ interface }} offload tso
+
+{%-             endif %}
+{%-         endif %}
+{%-     endif %}
+
 {%-     if iface_data['type'] == 'lacp' %}
 
 set interfaces bonding {{ interface }} mode 802.3ad
