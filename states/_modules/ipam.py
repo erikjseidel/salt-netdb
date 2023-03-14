@@ -63,7 +63,7 @@ def report(report = True, comment = True):
     if router in loopback:
         data.update(loopback[router])
     if router in ifaces:
-        data = copy.deepcopy(ifaces[router])
+        data.update(ifaces[router])
     if router in tunnels:
         data.update(tunnels[router])
 
