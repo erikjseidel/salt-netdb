@@ -7,17 +7,32 @@ __virtualname__ = "ethernet"
 
 log = logging.getLogger(__file__)
 
-_PILLAR = 'znsl_ethernet'
+_COLUMN = 'interface'
+
 # Disabled tunnels stored in this redis key.
 _REDIS_KEY = 'ethernet_disabled'
 
 
 def __virtual__():
-    if ( _PILLAR in __pillar__.keys() ):
-        if __grains__['id'] in __pillar__[_PILLAR].keys():
-            return __virtualname__
-    else:
-        return ( False, 'No salt managed ethernet / vlans / bundles found on this router. Module not loaded.' )
+    return __virtualname__
+
+
+def _netdb_pull():
+    router = __grains__['id']
+    netdb_answer =  __salt__['netdb.get_column'](_COLUMN)
+
+    if not netdb_answer['result'] or 'out' not in netdb_answer:
+        return netdb_answer
+
+    interfaces = netdb_answer['out']
+
+    ethernet = {}
+
+    for iface, iface_data in interfaces[router].items():
+        if iface.startswith('eth') or iface.startswith('bond'):
+            ethernet[iface] = iface_data
+
+    return { 'result': True, 'out': ethernet }
 
 
 def _is_marked_disabled(interface):
@@ -83,25 +98,17 @@ def generate():
         salt sin1-proxy ethernet.generate
 
     """
-    router = __grains__['id']
-    ifaces = __pillar__[_PILLAR][router]
-    
-    ret_ifaces = copy.deepcopy(ifaces)
+    ret_ethernet = _netdb_pull()
+    if not ret_ethernet['result']:
+        return ret_ethernet
+
+    ifaces = ret_ethernet['out']
 
     ret = {'out': {}, 'result': False, 'error': False}
 
-    if not (ret_ifaces):
-        ret.update(
-            {
-                'comment': 'Failed to fetch interface data',
-                'error': True,
-            }
-        )
-        return ret
-
     disabled_ifaces = _get_disabled_interfaces()['out']
 
-    for interface, settings in ret_ifaces.items():
+    for interface, settings in ifaces.items():
         if interface in disabled_ifaces:
             settings['disabled'] = True
         else:
@@ -122,15 +129,15 @@ def generate():
         else:
             return {'result': False, 'comment': interface + ": unsupported interface type!"}
 
-    ret.update({'result': True, 'out': ret_ifaces})
+    ret.update({'result': True, 'out': ifaces})
 
     return ret
 
 
 def enable(interface, test=False, debug=False, force=False):
     """
-    Enable a salt managed ethernet, vlan or bundle interface . The interface must exist in 
-    the interface pillar.
+    Enable a salt managed ethernet, vlan or bundle interface. The interface must exist in 
+    netdb.
 
     :param interface: The name of the interface to be enabled
     :param test: True for dry-run. False to apply on the router.
@@ -150,39 +157,38 @@ def enable(interface, test=False, debug=False, force=False):
         salt sin1-proxy ethernet.enable eth1 force=False
 
     """
-
-
     name = 'enable_ethernet'
     ret = {"result": False, "comment": "Interface does not exist on selected router."}
 
     if not interface:
         ret = {"result": False, "comment": "No interface selected."}
 
-    router = __grains__['id']
-    ifaces = __pillar__[_PILLAR][router].keys()
+    ret_ifaces = _netdb_pull()
+    if not ret_ifaces['result']:
+        return ret_ifaces
 
-    type = __pillat__[_PILLAR][router][interface]
+    ifaces = ret_ifaces['out']
 
-    if interface not in ifaces:
+    if interface not in ifaces.keys():
         ret = {"result": False, "comment": "Interface not found on this router."}
     else:
-        type = __pillar__[_PILLAR][router][interface]['type']
+        iface_type = ifaces[interface]['type']
         statement = ''
 
-        if type == 'vlan':
-            vlan_id = __pillar__[_PILLAR][router][interface]['vlan']['id']
-            parent  = __pillar__[_PILLAR][router][interface]['vlan']['parent']
+        if iface_type == 'vlan':
+            vlan_id = ifaces[interface]['vlan']['id']
+            parent  = ifaces[interface]['vlan']['parent']
 
             parent_type = "ethernet "
             if "bond" in parent:
                 parent_type = "bonding "
 
-            statement = parent_type + parent + " vif " + vlan_id
+            statement = parent_type + parent + " vif " + str(vlan_id)
 
-        elif type == 'lacp':
+        elif iface_type == 'lacp':
             statement = "bonding " + interface
 
-        elif type == 'ethernet':
+        elif iface_type == 'ethernet':
             statement = "ethernet " + interface
 
         else:
@@ -216,8 +222,7 @@ def enable(interface, test=False, debug=False, force=False):
 
 def disable(interface, test=False, debug=False, force=False):
     """
-    Disable a salt managed interface. The interface must exist in the router's ethernet pillar.
-    tunnel pillar.
+    Disable a salt managed interface. The interface must exist in netdb.
 
     :param interface: The name of the tunnel to be disabled
     :param test: True for dry-run. False to apply on the router.
@@ -237,25 +242,27 @@ def disable(interface, test=False, debug=False, force=False):
         salt sin1-proxy ethernet.disable bond0.902 force=False
 
     """
-
     name = 'disable_ethernet'
     ret = {"result": False, "comment": "Interface does not exist on selected router."}
 
     if not interface:
         ret = {"result": False, "comment": "No interface selected."}
 
-    router = __grains__['id']
-    ifaces = __pillar__[_PILLAR][router].keys()
+    ret_ifaces = _netdb_pull()
+    if not ret_ifaces['result']:
+        return ret_ifaces
 
-    if interface not in ifaces:
+    ifaces = ret_ifaces['out']
+
+    if interface not in ifaces.keys():
         ret = {"result": False, "comment": "Interface not found on this router."}
     else:
-        type = __pillar__[_PILLAR][router][interface]['type']
+        iface_type = ifaces[interface]['type']
         statement = ''
 
-        if type == 'vlan':
-            vlan_id = __pillar__[_PILLAR][router][interface]['vlan']['id']
-            parent  = __pillar__[_PILLAR][router][interface]['vlan']['parent']
+        if iface_type == 'vlan':
+            vlan_id = ifaces[interface]['vlan']['id']
+            parent  = ifaces[interface]['vlan']['parent']
 
             parent_type = "ethernet "
             if "bond" in parent:
@@ -263,10 +270,10 @@ def disable(interface, test=False, debug=False, force=False):
 
             statement = parent_type + parent + " vif " + str(vlan_id)
 
-        elif type == 'lacp':
+        elif iface_type == 'lacp':
             statement = "bonding " + interface
 
-        elif type == 'ethernet':
+        elif iface_type == 'ethernet':
             statement = "ethernet " + interface
 
         else:
@@ -316,9 +323,7 @@ def display(type='ethernet'):
         salt sin1-proxy tunnel.display
 
     """
-
-    router = __grains__['id']
-    ifaces = __pillar__[_PILLAR][router].keys()
+    ret_ifaces = _netdb_pull()
 
     ret = {"result": False, "comment": "unsupported operating system."}
 
@@ -340,13 +345,17 @@ def display(type='ethernet'):
     
     disabled_ifaces = _get_disabled_interfaces()['out']
 
-    iface_list = []
-    for interface in ifaces:
-        data = interface
-        if interface in disabled_ifaces:
-            data += "\t[disabled]"
-        iface_list.append(data)
+    if ret_ifaces['result']:
+        ifaces = ret_ifaces['out'].keys()
+        iface_list = []
+        for interface in ifaces:
+            data = interface
+            if interface in disabled_ifaces:
+                data += "\t[disabled]"
+            iface_list.append(data)
 
-    ret['comment'] = "salt managed interfaces:\n--- \n" + '\n'.join( iface_list )
+        ret['comment'] = "salt managed interfaces:\n--- \n" + '\n'.join( iface_list )
+    else:
+        ret['comment'] = "netdb API is down"
 
     return ret

@@ -7,13 +7,13 @@ Tunnel_Configuration:
     - template_name: salt://{{ slspath }}/templates/{{ grains.os }}.jinja
     - data: {{ data }}
 
-{%- elif data['error'] %}
-tunnels_generate_dictionary_empty:
+{%- elif not data['result']  %}
+tunnel_generate_empty:
   test.fail_without_changes:
-    - name: {{ data['comment'] }}
+    - name: "{{ data['comment'] }}"
 
 {% else %}
 noop:
   test.succeed_without_changes:
-    - name: {{ data['comment'] }}
+    - name: "{{ data['comment'] }}"
 {%- endif %}

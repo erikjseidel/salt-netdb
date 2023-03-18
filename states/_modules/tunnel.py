@@ -1,24 +1,38 @@
 # -*- coding: utf-8 -*-
 
-import logging
-import copy
+import logging, copy, json
 import socket, struct
+import salt.utils.http
 
 __virtualname__ = "tunnel"
 
 log = logging.getLogger(__file__)
 
-_PILLAR = 'znsl_tunnels'
+_COLUMN = 'interface'
+
 # Disabled tunnels stored in this redis key.
 _REDIS_KEY = 'tunnel_disabled'
 
-
 def __virtual__():
-    if ( _PILLAR in __pillar__.keys() ):
-        if __grains__['id'] in __pillar__[_PILLAR].keys():
-            return __virtualname__
-    else:
-        return ( False, 'No salt managed tunnels found on this router. Module not loaded.' )
+    return __virtualname__
+
+def _netdb_pull():
+    router = __grains__['id']
+    netdb_answer =  __salt__['netdb.get_column'](_COLUMN)
+
+    if not netdb_answer['result'] or 'out' not in netdb_answer:
+        return netdb_answer
+    
+    interfaces = netdb_answer['out']
+
+    tunnels = {}
+
+    for iface, iface_data in interfaces[router].items():
+        if iface.startswith('tun'):
+            tunnels[iface] = iface_data
+
+    return { 'result': True, 'out': tunnels }
+
 
 def _ip2long(ip):
     """
@@ -90,25 +104,18 @@ def generate():
         salt sin1-proxy tunnel.generate
 
     """
-    router = __grains__['id']
-    tunnels = __pillar__[_PILLAR][router]
-    
-    ret_tunnels = copy.deepcopy(tunnels)
+
+    ret_tunnels = _netdb_pull()
+    if not ret_tunnels['result']:
+        return ret_tunnels
+
+    tunnels = ret_tunnels['out']
 
     ret = {'out': {}, 'result': False, 'error': False}
 
-    if not (ret_tunnels):
-        ret.update(
-            {
-                'comment': 'Failed to fetch tunnels data',
-                'error': True,
-            }
-        )
-        return ret
-
     disabled_tunnels = _get_disabled_tunnels()['out']
 
-    for tunnel, settings in ret_tunnels.items():
+    for tunnel, settings in tunnels.items():
         if tunnel in disabled_tunnels:
             settings['disabled'] = True
         else:
@@ -117,7 +124,7 @@ def generate():
         if 'key' in settings:
             settings['key_vyos'] = _ip2long(settings['key'])
 
-    ret.update({'result': True, 'out': ret_tunnels})
+    ret.update({'result': True, 'out': tunnels})
 
     return ret
 
@@ -145,15 +152,17 @@ def enable(tunnel, test=False, debug=False, force=False):
 
     """
 
-
     name = 'enable_tunnel'
     ret = {"result": False, "comment": "Tunnel does not exist on selected router."}
 
     if not tunnel:
         ret = {"result": False, "comment": "No tunnel selected."}
 
-    router = __grains__['id']
-    tunnels = __pillar__[_PILLAR][router].keys()
+    ret_tunnels = _netdb_pull()
+    if not ret_tunnels['result']:
+        return ret_tunnels
+
+    tunnels = ret_tunnels['out'].keys()
 
     if tunnel not in tunnels:
         ret = {"result": False, "comment": "Tunnel not found on this router."}
@@ -213,8 +222,11 @@ def disable(tunnel, test=False, debug=False, force=False):
     if not tunnel:
         ret = {"result": False, "comment": "No tunnel selected."}
 
-    router = __grains__['id']
-    tunnels = __pillar__[_PILLAR][router].keys()
+    ret_tunnels = _netdb_pull()
+    if not ret_tunnels['result']:
+        return ret_tunnels
+
+    tunnels = ret_tunnels['out'].keys()
 
     if tunnel not in tunnels:
         ret = {"result": False, "comment": "Tunnel not found on this router."}
@@ -263,11 +275,9 @@ def display():
 
     """
 
-    router = __grains__['id']
-    tunnels = __pillar__[_PILLAR][router].keys()
+    ret_tunnels = _netdb_pull()
 
     ret = {"result": False, "comment": "unsupported operating system."}
-
 
     if (
         __grains__['os'] == "vyos"
@@ -281,13 +291,17 @@ def display():
     
     disabled_tunnels = _get_disabled_tunnels()['out']
 
-    tunnel_list = []
-    for tunnel in tunnels:
-        data = tunnel
-        if tunnel in disabled_tunnels:
-            data += "\t[disabled]"
-        tunnel_list.append(data)
+    if ret_tunnels['result']:
+        tunnel_list = []
+        tunnels = ret_tunnels['out']
+        for tunnel in tunnels:
+            data = tunnel
+            if tunnel in disabled_tunnels:
+                data += "\t[disabled]"
+            tunnel_list.append(data)
 
-    ret['comment'] = "salt managed tunnels:\n--- \n" + '\n'.join( tunnel_list )
+        ret['comment'] = "salt managed tunnels:\n--- \n" + '\n'.join( tunnel_list )
+    else:
+        ret['comment'] = "netdb API down"
 
     return ret

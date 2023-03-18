@@ -7,15 +7,28 @@ __virtualname__ = "loopback"
 
 log = logging.getLogger(__file__)
 
-_PILLAR = 'znsl_loopback'
-
+_COLUMN = 'interface'
 
 def __virtual__():
-    if ( _PILLAR in __pillar__.keys() ):
-        if __grains__['id'] in __pillar__[_PILLAR].keys():
-            return __virtualname__
-    else:
-        return ( False, 'No salt managed loopback interfaces found on this router. Module not loaded.' )
+    return __virtualname__
+
+
+def _netdb_pull():
+    router = __grains__['id']
+    netdb_answer =  __salt__['netdb.get_column'](_COLUMN)
+
+    if not netdb_answer['result'] or 'out' not in netdb_answer:
+        return netdb_answer
+
+    interfaces = netdb_answer['out']
+
+    loopbacks = {}
+
+    for iface, iface_data in interfaces[router].items():
+        if iface.startswith('dum'):
+            loopbacks[iface] = iface_data
+
+    return { 'result': True, 'out': loopbacks }
 
 
 def generate():
@@ -35,25 +48,14 @@ def generate():
         salt sin1-proxy loopback.generate
 
     """
-    router = __grains__['id']
-    ifaces = __pillar__[_PILLAR][router]
     
-    ret_ifaces = copy.deepcopy(ifaces)
+    ret_lo = _netdb_pull()
+    if not ret_lo['result']:
+        return ret_lo
 
-    ret = {'out': {}, 'result': False, 'error': False}
+    ifaces = ret_lo['out']
 
-    if not (ret_ifaces):
-        ret.update(
-            {
-                'comment': 'Failed to fetch loopback data',
-                'error': True,
-            }
-        )
-        return ret
-
-    ret.update({'result': True, 'out': ret_ifaces})
-
-    return ret
+    return {'result': True, 'out': ifaces}
 
 
 def display():
@@ -75,11 +77,9 @@ def display():
 
     """
 
-    router = __grains__['id']
-    ifaces = __pillar__[_PILLAR][router].keys()
+    ret_lo = _netdb_pull()
 
     ret = {"result": False, "comment": "unsupported operating system."}
-
 
     if (
         __grains__['os'] == "vyos"
@@ -91,11 +91,15 @@ def display():
             )
         )
     
-    iface_list = []
-    for interface in ifaces:
-        data = interface
-        iface_list.append(data)
+    if ret_lo['result']:
+        ifaces = ret_lo['out']
+        iface_list = []
+        for interface in ifaces:
+            data = interface
+            iface_list.append(data)
 
-    ret['comment'] = "salt managed loopback (dummy) interfaces:\n--- \n" + '\n'.join( iface_list )
+        ret['comment'] = "salt managed loopback (dummy) interfaces:\n--- \n" + '\n'.join( iface_list )
+    else:
+        ret['comment'] = "netdb API down"
 
     return ret
