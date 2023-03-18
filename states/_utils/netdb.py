@@ -3,7 +3,6 @@ import salt.utils.http
 import json
 
 def get_grains(pillar):
-
     router = pillar['id'].upper()
 
     url = pillar['url'] + 'device' + '/' + router
