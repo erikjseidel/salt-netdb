@@ -130,7 +130,7 @@ def generate():
 
 def enable(tunnel, test=False, debug=False, force=False):
     """
-    Enable a salt managed tunnel. The tunnel must exist in the router's tunnels pillar.
+    Enable a salt managed tunnel. The router and tunnel must exist in netdb.
 
     :param tunnel: The name of the tunnel to be enabled
     :param test: True for dry-run. False to apply on the router.
@@ -193,8 +193,7 @@ def enable(tunnel, test=False, debug=False, force=False):
 
 def disable(tunnel, test=False, debug=False, force=False):
     """
-    Disable a salt managed tunnel. The tunnel must exist in the router's tunnel pillar.
-    tunnel pillar.
+    Disable a salt managed tunnel. The router and tunnel must exist in netdb.
 
     :param tunnel: The name of the tunnel to be disabled
     :param test: True for dry-run. False to apply on the router.

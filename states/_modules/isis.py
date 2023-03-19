@@ -106,8 +106,7 @@ def generate():
 
 def enable_interface(interface, test=False, debug=False, force=False):
     """
-    Enable IS-IS on a salt managed IS-IS interface. The interface must exist in the router's
-    IS-IS pillar.
+    Enable IS-IS on a salt managed IS-IS interface. The interface must exist in netdb.
 
     :param interface: The name of the interface to be enabled
     :param test: True for dry-run. False to apply on the router.
@@ -176,8 +175,8 @@ def enable_interface(interface, test=False, debug=False, force=False):
 
 def disable_interface(interface, test=False, debug=False, force=False):
     """
-    Disable IS-IS on a salt managed IS-IS interface. The interface must exist in the router's
-    IS-IS pillar. Passive (i.e. loopback / dummy) interfaces cannot be disabled.
+    Disable IS-IS on a salt managed IS-IS interface. The interface must exist in netdb.
+    Passive (i.e. loopback / dummy) interfaces cannot be disabled.
 
     :param interface: The name of the interface to be disabled
     :param test: True for dry-run. False to apply on the router.
