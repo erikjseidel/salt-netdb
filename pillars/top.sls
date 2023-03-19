@@ -6,11 +6,9 @@ base:
     - node/sin1/bgp
   sin2-proxy:
     - proxies/sin2-proxy
-    - node/sin2/isis
     - node/sin2/bgp
   sin3-proxy:
     - proxies/sin3-proxy
-    - node/sin3/isis
     - node/sin3/bgp
 #  fra1:
 #    - proxies/fra1
@@ -39,6 +37,5 @@ base:
   '*':
     - firewall
     - policy
-    - isis
     - bgp
     - netdb

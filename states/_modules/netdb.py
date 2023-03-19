@@ -12,6 +12,7 @@ def __virtual__():
     else:
         return ( False, 'netdb configuration pillar not found.' )
 
+
 def get_column(column):
     """
     Return a column for router grains.id from netdb.

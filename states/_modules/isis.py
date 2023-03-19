@@ -332,7 +332,10 @@ def adj():
 
         ret['comment'] = "salt managed IS-IS interfaces:\n--- \n" + '\n'.join( iface_list )
     else:
-        ret['comment'] = "netdb API down"
+        if 'error' in ret_isis and ret_isis['error']:
+            ret['comment'] = "netdb API down"
+        else:
+            ret['comment'] = "salt / netdb managed ISIS not present on this router"
 
     return ret
 
@@ -412,6 +415,9 @@ def interface():
 
         ret['comment'] = "salt managed IS-IS interfaces:\n--- \n" + '\n'.join( iface_list  )
     else:
-        ret['comment'] = "netdb API down"
+        if 'error' in ret_isis and ret_isis['error']:
+            ret['comment'] = "netdb API down"
+        else:
+            ret['comment'] = "salt / netdb managed ISIS not present on this router"
 
     return ret
