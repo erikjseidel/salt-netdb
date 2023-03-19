@@ -27,7 +27,7 @@ def get_column(column):
     router = __grains__['id']
     netdb = __pillar__[_PILLAR]
 
-    url = netdb['url'] + column + '/' + router
+    url = netdb['url'] + column + '/' + router + '/config'
 
     headers = {
         "Content-Type": "application/json",

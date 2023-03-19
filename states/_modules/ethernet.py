@@ -42,33 +42,29 @@ def _is_marked_disabled(interface):
     return __salt__['net_redis.check_entry'](_REDIS_KEY, interface)
 
 
-def _remove_disable_mark(interface):
+def _remove_disable_mark(interface, interfaces):
     """
     Removes an interface from the disabled list. Wrapper around generic net_redis entry functions.
     """
-    router = __grains__['id']
-    ifaces = __pillar__[_PILLAR][router].keys()
 
     if not interface:
         return {"result": False, "comment": "No interface selected."}
 
-    if interface not in ifaces:
+    if interface not in interfaces:
         return {"result": False, "comment": "interface not found."}
 
     return __salt__['net_redis.remove_entry'](_REDIS_KEY, interface)
 
 
-def _mark_disabled_interface(interface):
+def _mark_disabled_interface(interface, interfaces):
     """
     Adds an interface to disabled list. Wrapper around generic net_redis entry functions.
     """
-    router = __grains__['id']
-    ifaces = __pillar__[_PILLAR][router].keys()
 
     if not interface:
         return {"result": False, "comment": "No interface selected."}
 
-    if interface not in ifaces:
+    if interface not in interfaces:
         return {"result": False, "comment": "Interface not found."}
 
     return __salt__['net_redis.add_entry'](_REDIS_KEY, interface)
@@ -215,7 +211,7 @@ def enable(interface, test=False, debug=False, force=False):
             )
             # force means it didn't have the mark anyway.
             if not force and not test:
-                _remove_disable_mark(interface)
+                _remove_disable_mark(interface, ifaces.keys())
 
     return ret
 
@@ -300,7 +296,7 @@ def disable(interface, test=False, debug=False, force=False):
             )
             # force means it didn't have the mark anyway.
             if not force and not test:
-                _mark_disabled_interface(interface)
+                _mark_disabled_interface(interface, ifaces.keys())
 
     return ret
 

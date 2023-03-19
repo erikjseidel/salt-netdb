@@ -7,16 +7,25 @@ __virtualname__ = "isis"
 
 log = logging.getLogger(__file__)
 
-_PILLAR = 'znsl_isis'
+_COLUMN = 'igp'
+
 #  IS-IS disabled interfaces stored in this redis key.
 _REDIS_KEY = 'isis_disabled'
 
-
 def __virtual__():
-    if ( _PILLAR in __pillar__.keys() ):
-        return __virtualname__
-    else:
-        return ( False, 'IS-IS not enabled or not salt managed on this router. Module not loaded.' )
+    return __virtualname__
+
+
+def _netdb_pull():
+    router = __grains__['id']
+    netdb_answer =  __salt__['netdb.get_column'](_COLUMN)
+
+    if not netdb_answer['result'] or 'out' not in netdb_answer:
+        return netdb_answer
+    
+    igp = netdb_answer['out']
+
+    return { 'result': True, 'out': igp[router] }
 
 
 def _is_marked_disabled(interface):
@@ -26,31 +35,29 @@ def _is_marked_disabled(interface):
     return __salt__['net_redis.check_entry'](_REDIS_KEY, interface)
 
 
-def _remove_disable_mark(interface):
+def _remove_disable_mark(interface, interfaces):
     """
     Removes an IS-IS interface disabled list. Wrapper around generic net_redis entry functions.
     """
-    isis_interfaces = __pillar__[_PILLAR]['interfaces']
 
     if not interface:
         return {"result": False, "comment": "No IS-IS interface selected."}
 
-    if not next((item for item in isis_interfaces if item['name'] == interface), None):
+    if not next((item for item in interfaces if item['name'] == interface), None):
         return {"result": False, "comment": "IS-IS interface not found."}
 
     return __salt__['net_redis.remove_entry'](_REDIS_KEY, interface)
 
 
-def _mark_disabled_iface(interface):
+def _mark_disabled_iface(interface, interfaces):
     """
     Adds an IS-IS interface disabled list. Wrapper around generic net_redis entry functions.
     """
-    isis_interfaces = __pillar__[_PILLAR]['interfaces']
 
     if not interface:
         return {"result": False, "comment": "No IS-IS interface selected."}
 
-    if not next((item for item in isis_interfaces if item['name'] == interface), None):
+    if not next((item for item in interfaces if item['name'] == interface), None):
         return {"result": False, "comment": "IS-IS interface not found."}
 
     return __salt__['net_redis.add_entry'](_REDIS_KEY, interface)
@@ -81,31 +88,20 @@ def generate():
 
     """
 
-    isis = __pillar__[_PILLAR]
-
-    ret_isis = copy.deepcopy(isis)
-    ret = {'out': {}, 'result': False, 'error': False}
-
-    if not (ret_isis):
-        ret.update(
-            {
-                'comment': 'IS-IS data not found',
-                'error': True,
-            }
-        )
-        return ret
+    ret_isis = _netdb_pull()
+    if not ret_isis['result']:
+        ret_isis.update({ 'error': True })
+        return ret_isis
 
     new_ints = []
 
-    for interface in ret_isis['interfaces']:
+    for interface in ret_isis['out']['interfaces']:
        if not _is_marked_disabled(interface['name'])['out']:
             new_ints.append(interface)
 
-    ret_isis['interfaces'] = new_ints
+    ret_isis['out']['interfaces'] = new_ints
 
-    ret.update({'result': True, 'out': ret_isis })
-
-    return ret
+    return ret_isis
 
 
 def enable_interface(interface, test=False, debug=False, force=False):
@@ -132,8 +128,6 @@ def enable_interface(interface, test=False, debug=False, force=False):
 
     """
 
-    isis = __pillar__[_PILLAR]
-
     name = 'isis_enable_interface'
 
     ret = {}
@@ -143,6 +137,12 @@ def enable_interface(interface, test=False, debug=False, force=False):
 
     if not interface:
         return {"result": False, "comment": "No interface selected."}
+
+    ret_isis = _netdb_pull()
+    if not ret_isis['result']:
+        return ret_isis
+
+    isis = ret_isis['out']
 
     iface = next((item for item in isis['interfaces'] if item['name'] == interface), None)
 
@@ -169,7 +169,7 @@ def enable_interface(interface, test=False, debug=False, force=False):
             )
             # force means it didn't have the mark anyway.
             if not force and not test:
-                _remove_disable_mark(interface)
+                _remove_disable_mark(interface, isis['interfaces'])
 
     return ret
 
@@ -198,8 +198,6 @@ def disable_interface(interface, test=False, debug=False, force=False):
 
     """
 
-    isis = __pillar__[_PILLAR]
-
     name = 'isis_disable_interface'
 
     ret = {}
@@ -210,6 +208,12 @@ def disable_interface(interface, test=False, debug=False, force=False):
     if not interface:
         return {"result": False, "comment": "No interface selected."}
 
+    ret_isis = _netdb_pull()
+    if not ret_isis['result']:
+        return ret_isis
+
+    isis = ret_isis['out']
+
     iface = next((item for item in isis['interfaces'] if item['name'] == interface), None)
 
     if not iface:
@@ -217,7 +221,7 @@ def disable_interface(interface, test=False, debug=False, force=False):
     elif 'passive' in iface.keys() and iface['passive']:
         ret = {"result": False, "comment": "IS-IS passive interface cannot be disabled."}
     else:
-        ret = _is_marked_disabled(interface)
+        ret = _is_marked_disabled(interface, isis['interfaces'])
 
         if ret['out'] and not force:
             ret = { 
@@ -304,7 +308,7 @@ def adj():
 
     """
 
-    isis = __pillar__[_PILLAR]
+    ret_isis = _netdb_pull()
 
     ret = {"result": False, "comment": "unsupported operating system."}
 
@@ -317,16 +321,19 @@ def adj():
 
     disabled_interfaces = _get_disabled_ifaces()['out']
 
-    iface_list = []
-    for iface in isis['interfaces']:
-        data = iface['name']
-        if 'passive' in iface.keys() and iface['passive']:
-            data += "\t[passive]"
-        if iface['name'] in disabled_interfaces:
-            data += "\t[disabled]"
-        iface_list.append(data)
+    if ret_isis['result']:
+        iface_list = []
+        for iface in ret_isis['out']['interfaces']:
+            data = iface['name']
+            if 'passive' in iface.keys() and iface['passive']:
+                data += "\t[passive]"
+            if iface['name'] in disabled_interfaces:
+                data += "\t[disabled]"
+            iface_list.append(data)
 
-    ret['comment'] = "salt managed IS-IS interfaces:\n--- \n" + '\n'.join( iface_list )
+        ret['comment'] = "salt managed IS-IS interfaces:\n--- \n" + '\n'.join( iface_list )
+    else:
+        ret['comment'] = "netdb API down"
 
     return ret
 
@@ -379,7 +386,7 @@ def interface():
 
     """
 
-    isis = __pillar__[_PILLAR]
+    ret_isis = _netdb_pull()
 
     ret = {"result": False, "comment": "unsupported operating system."}
 
@@ -394,15 +401,18 @@ def interface():
 
     disabled_interfaces = _get_disabled_ifaces()['out']
 
-    iface_list = []
-    for iface in isis['interfaces']:
-        data = iface['name']
-        if 'passive' in iface.keys() and iface['passive']:
-            data += "\t[passive]"
-        if iface['name'] in disabled_interfaces:
-            data += "\t[disabled]"
-        iface_list.append(data)
+    if ret_isis['result']:
+        iface_list = []
+        for iface in ret_isis['out']['interfaces']:
+            data = iface['name']
+            if 'passive' in iface.keys() and iface['passive']:
+                data += "\t[passive]"
+            if iface['name'] in disabled_interfaces:
+                data += "\t[disabled]"
+            iface_list.append(data)
 
-    ret['comment'] = "salt managed IS-IS interfaces:\n--- \n" + '\n'.join( iface_list  )
+        ret['comment'] = "salt managed IS-IS interfaces:\n--- \n" + '\n'.join( iface_list  )
+    else:
+        ret['comment'] = "netdb API down"
 
     return ret

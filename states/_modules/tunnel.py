@@ -16,6 +16,7 @@ _REDIS_KEY = 'tunnel_disabled'
 def __virtual__():
     return __virtualname__
 
+
 def _netdb_pull():
     router = __grains__['id']
     netdb_answer =  __salt__['netdb.get_column'](_COLUMN)
@@ -41,6 +42,7 @@ def _ip2long(ip):
     packedIP = socket.inet_aton(ip)
     return struct.unpack("!L", packedIP)[0]
 
+
 def _is_marked_disabled(tunnel):
     """
     Checks if a tunnel is disabled. Wrapper around generic net_redis entry functions.
@@ -48,12 +50,10 @@ def _is_marked_disabled(tunnel):
     return __salt__['net_redis.check_entry'](_REDIS_KEY, tunnel)
 
 
-def _remove_disable_mark(tunnel):
+def _remove_disable_mark(tunnel, tunnels):
     """
     Removes a tunnel from the disabled list. Wrapper around generic net_redis entry functions.
     """
-    router = __grains__['id']
-    tunnels = __pillar__[_PILLAR][router].keys()
 
     if not tunnel:
         return {"result": False, "comment": "No tunnel selected."}
@@ -64,12 +64,10 @@ def _remove_disable_mark(tunnel):
     return __salt__['net_redis.remove_entry'](_REDIS_KEY, tunnel)
 
 
-def _mark_disabled_tunnel(tunnel):
+def _mark_disabled_tunnel(tunnel, tunnels):
     """
     Adds a tunnel to disabled list. Wrapper around generic net_redis entry functions.
     """
-    router = __grains__['id']
-    tunnels = __pillar__[_PILLAR][router].keys()
 
     if not tunnel:
         return {"result": False, "comment": "No tunnel selected."}
@@ -107,6 +105,7 @@ def generate():
 
     ret_tunnels = _netdb_pull()
     if not ret_tunnels['result']:
+        ret_tunnels.update({ 'error': True })
         return ret_tunnels
 
     tunnels = ret_tunnels['out']
@@ -187,7 +186,7 @@ def enable(tunnel, test=False, debug=False, force=False):
             )
             # force means it didn't have the mark anyway.
             if not force and not test:
-                _remove_disable_mark(tunnel)
+                _remove_disable_mark(tunnel, tunnels)
 
     return ret
 
@@ -251,7 +250,7 @@ def disable(tunnel, test=False, debug=False, force=False):
             )
             # force means it didn't have the mark anyway.
             if not force and not test:
-                _mark_disabled_tunnel(tunnel)
+                _mark_disabled_tunnel(tunnel, tunnels)
 
     return ret
 
