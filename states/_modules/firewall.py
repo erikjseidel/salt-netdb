@@ -1,16 +1,24 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import copy
 
 __virtualname__ = "firewall"
 
 log = logging.getLogger(__file__)
 
-_PILLAR = 'znsl_firewall'
+_COLUMN = 'firewall'
 
 def __virtual__():
     return __virtualname__
+
+
+def _netdb_pull():
+    netdb_answer =  __salt__['netdb.get_column'](_COLUMN)
+
+    if not netdb_answer['result'] or 'out' not in netdb_answer:
+        netdb_answer.update({ 'error': True })
+
+    return netdb_answer
 
 
 def generate():
@@ -31,30 +39,4 @@ def generate():
 
     """
 
-    firewall = __pillar__[_PILLAR]
-
-    ret = {'out': {}, 'result': False, 'error': False}
-
-    if not (firewall):
-        ret.update(
-            {
-                'comment': 'Failed to get firewall data',
-                'error': True,
-            }
-        )
-        return ret
-    
-    router_roles = __grains__['roles']
-
-    rules_out = {}
-
-    router_roles.append('common')
-    router_roles.append('custom_firewall')
-
-    for role in router_roles:
-        if role in firewall.keys():
-            rules_out[role] = copy.deepcopy(firewall[role])
-
-    ret.update({'result': True, 'out': rules_out})
-
-    return ret
+    return _netdb_pull()
