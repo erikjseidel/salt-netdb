@@ -25,7 +25,10 @@ def _netdb_pull():
     
     igp = netdb_answer['out']
 
-    return { 'result': True, 'out': igp[router] }
+    if not igp:
+        return { 'result': False, 'comment': 'no ISIS config found for this router' }
+
+    return { 'result': True, 'out': igp }
 
 
 def _is_marked_disabled(interface):
@@ -93,13 +96,21 @@ def generate():
         ret_isis.update({ 'error': True })
         return ret_isis
 
+    isis = {}
+    for item, contents in ret_isis['out'].items():
+        isis.update(contents)
+
+    isis.pop('roles', None)
+
     new_ints = []
 
-    for interface in ret_isis['out']['interfaces']:
+    for interface in isis['interfaces']:
        if not _is_marked_disabled(interface['name'])['out']:
             new_ints.append(interface)
 
-    ret_isis['out']['interfaces'] = new_ints
+    isis['interfaces'] = new_ints
+
+    ret_isis.update({ 'out': isis })
 
     return ret_isis
 
