@@ -1,16 +1,24 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import copy
 
 __virtualname__ = "policy"
 
 log = logging.getLogger(__file__)
 
-_PILLAR = 'znsl_policy'
+_COLUMN = 'policy'
 
 def __virtual__():
     return __virtualname__
+
+
+def _netdb_pull():
+    netdb_answer =  __salt__['netdb.get_column'](_COLUMN)
+
+    if not netdb_answer['result'] or 'out' not in netdb_answer:
+        netdb_answer.update({ 'error': True })
+
+    return netdb_answer
 
 
 def generate():
@@ -31,30 +39,4 @@ def generate():
 
     """
 
-    policy = __pillar__[_PILLAR]
-
-    ret = {'out': {}, 'result': False, 'error': False}
-
-    if not (policy):
-        ret.update(
-            {
-                'comment': 'Failed to get policy data',
-                'error': True,
-            }
-        )
-        return ret
-    
-    router_roles = __grains__['roles']
-
-    policy_out = {}
-
-    router_roles.append('common')
-    router_roles.append('custom_policy')
-
-    for role in router_roles:
-        if role in policy.keys():
-            policy_out[role] = copy.deepcopy(policy[role])
-
-    ret.update({'result': True, 'out': policy_out})
-
-    return ret
+    return _netdb_pull()

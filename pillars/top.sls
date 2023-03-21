@@ -1,7 +1,6 @@
 base:
   sin1-proxy:
     - proxies/sin1-proxy
-    - node/sin1/policy
     - node/sin1/bgp
   sin2-proxy:
     - proxies/sin2-proxy
@@ -34,6 +33,5 @@ base:
 #    - node/aus4/policy
 #    - node/aus4/bgp
   '*':
-    - policy
     - bgp
     - netdb
