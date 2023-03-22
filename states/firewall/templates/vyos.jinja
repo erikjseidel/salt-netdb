@@ -129,7 +129,7 @@ set firewall {{ header }}name {{ policy }} rule {{ priority }} destination port 
 {%-         endfor %}
 {%-     endif %}
 {%-     if ( meta['zone_policy'] is defined ) %}
-{%-         for zone, zone_data in meta['zone_policy']['zone'].items() %}
+{%-         for zone, zone_data in meta['zone_policy'].items() %}
 {%-             if ( zone_data['default-action'] is defined ) %}
 
 set zone-policy zone {{ zone }} default-action {{ zone_data['default_action'] }}
