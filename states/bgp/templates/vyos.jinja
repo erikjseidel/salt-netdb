@@ -1,34 +1,34 @@
 
 delete protocols bgp
 
-set protocols bgp {{ grains.local_asn }} parameters default no-ipv4-unicast
-set protocols bgp {{ grains.local_asn }} parameters graceful-restart
+set protocols bgp {{ grains.cvars.local_asn }} parameters default no-ipv4-unicast
+set protocols bgp {{ grains.cvars.local_asn }} parameters graceful-restart
 
 {%- for group_name, group_data in data['out'].items() %}
-{%-     if 'router_id' in group_data %}
+{%-     if 'options' in group_data %}
+{%-         if 'router_id' in group_data['options'] %}
 
-set protocols bgp {{ grains.local_asn }} parameters router-id {{ group_data['router_id'] }}
-
-{%-     endif %}
-{%-     if 'log_neighbor_changes' in group_data and group_data['log_neighbor_changes'] %}
-
-set protocols bgp {{ grains.local_asn }} parameters log-neighbor-changes
-
-{%-     endif %}
-{%-     if 'timers' in group_data %}
-{%-         if 'hold' in group_data['timers'] %}
-
-set protocols bgp {{ grains.local_asn }} timers holdtime {{ group_data['timers']['hold'] }}
+set protocols bgp {{ grains.cvars.local_asn }} parameters router-id {{ group_data['options']['router_id'] }}
 
 {%-         endif %}
-{%-         if 'keepalive' in group_data['timers'] %}
+{%-         if 'log_neighbor_changes' in group_data['options'] and group_data['options']['log_neighbor_changes'] %}
 
-set protocols bgp {{ grains.local_asn }} timers keepalive {{ group_data['timers']['keepalive'] }}
+set protocols bgp {{ grains.cvars.local_asn }} parameters log-neighbor-changes
+
+{%-         endif %}
+{%-         if 'hold_time' in group_data['options'] %}
+
+set protocols bgp {{ grains.cvars.local_asn }} timers holdtime {{ group_data['options']['hold_time'] }}
+
+{%-         endif %}
+{%-         if 'keepalive_time' in group_data['options'] %}
+
+set protocols bgp {{ grains.cvars.local_asn }} timers keepalive {{ group_data['options']['keepalive_time'] }}
 
 {%-         endif %}
 {%-     endif %}
-{%-     if group_data['family'] is defined %}
-{%-         for family_name, family_data in group_data['family'].items() %}
+{%-     if group_data['address_family'] is defined %}
+{%-         for family_name, family_data in group_data['address_family'].items() %}
 {%-             if family_data['networks'] is defined %}
 {%-                 for network_name, network_data in family_data['networks'].items() %}
 

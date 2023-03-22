@@ -1,40 +1,47 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import copy
 
 __virtualname__ = "bgp"
 
 log = logging.getLogger(__file__)
 
-_PILLAR = 'znsl_bgp'
+_COLUMN = 'bgp'
 #  bgp disabled peers stored in this redis key.
 _REDIS_KEY = 'bgp_disabled'
 
 def __virtual__():
-    if ( _PILLAR in __pillar__.keys() ):
-        return __virtualname__
-    else:
-        return ( False, 'BGP not enabled or not salt managed on this router. Module not loaded.' )
+    return __virtualname__
+
+
+def _netdb_pull():
+    netdb_answer =  __salt__['netdb.get_column'](_COLUMN)
+
+    if not netdb_answer['result'] or 'out' not in netdb_answer:
+        netdb_answer.update({ 'error': True })
+
+    return netdb_answer
 
 
 def _get_peers():
     """
     Returns salt managed BGP peers on router plus the address families configured for each peer
     """
-    bgp = __pillar__[_PILLAR]
+    bgp = _netdb_pull()
+    if not bgp['result']:
+        return bgp
 
     peer_groups = {}
     neighbors = {}
 
     """ Load peer group data, needed to provide list of families for each neighbor
     """
-    for config_group, data in bgp.items():
+    for config_group, data in bgp['out'].items():
         if 'peer_groups' in data.keys():
             for peer_group, peer_group_data in data['peer_groups'].items():
                 peer_groups[peer_group] = peer_group_data
 
-    for config_group, data in bgp.items():
+    for config_group, data in bgp['out'].items():
         if 'neighbors' in data.keys():
             for neighbor, neighbor_data in data['neighbors'].items():
                 neighbors[neighbor] = neighbor_data
@@ -121,24 +128,7 @@ def generate():
 
     """
 
-    bgp = __pillar__[_PILLAR]
-
-    ret = {'out': {}, 'result': False, 'error': False}
-
-    if not (bgp):
-        ret.update(
-            {
-                'comment': 'Failed to get policy data',
-                'error': True,
-            }
-        )
-        return ret
-    
-    bgp_out = copy.deepcopy(bgp)
-
-    ret.update({'result': True, 'out': bgp_out})
-
-    return ret
+    return _netdb_pull()
 
 
 def enable(peer, test=False, debug=False, force=False):
@@ -268,6 +258,7 @@ def disable(peer, test=False, debug=False, force=False):
                 _mark_disabled_peer(peer)
 
     return ret
+
 
 def summary(family='both'):
     """
