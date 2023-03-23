@@ -23,10 +23,14 @@ def _netdb_pull():
     if not netdb_answer['result'] or 'out' not in netdb_answer:
         return netdb_answer
     
-    igp = netdb_answer['out']
+    data = netdb_answer['out']
 
-    if not igp:
+    if not data:
         return { 'result': False, 'comment': 'no ISIS config found for this router' }
+
+    igp = {}
+    for category, contents in data.items():
+        igp.update(contents['config_set'])
 
     return { 'result': True, 'out': igp }
 
@@ -38,7 +42,7 @@ def _is_marked_disabled(interface):
     return __salt__['net_redis.check_entry'](_REDIS_KEY, interface)
 
 
-def _remove_disable_mark(interface, interfaces):
+def _remove_disable_mark(interface):
     """
     Removes an IS-IS interface disabled list. Wrapper around generic net_redis entry functions.
     """
@@ -46,22 +50,16 @@ def _remove_disable_mark(interface, interfaces):
     if not interface:
         return {"result": False, "comment": "No IS-IS interface selected."}
 
-    if not next((item for item in interfaces if item['name'] == interface), None):
-        return {"result": False, "comment": "IS-IS interface not found."}
-
     return __salt__['net_redis.remove_entry'](_REDIS_KEY, interface)
 
 
-def _mark_disabled_iface(interface, interfaces):
+def _mark_disabled_iface(interface):
     """
     Adds an IS-IS interface disabled list. Wrapper around generic net_redis entry functions.
     """
 
     if not interface:
         return {"result": False, "comment": "No IS-IS interface selected."}
-
-    if not next((item for item in interfaces if item['name'] == interface), None):
-        return {"result": False, "comment": "IS-IS interface not found."}
 
     return __salt__['net_redis.add_entry'](_REDIS_KEY, interface)
 
@@ -96,11 +94,7 @@ def generate():
         ret_isis.update({ 'error': True })
         return ret_isis
 
-    isis = {}
-    for item, contents in ret_isis['out'].items():
-        isis.update(contents)
-
-    isis.pop('roles', None)
+    isis = ret_isis['out']
 
     new_ints = []
 
@@ -179,7 +173,7 @@ def enable_interface(interface, test=False, debug=False, force=False):
             )
             # force means it didn't have the mark anyway.
             if not force and not test:
-                _remove_disable_mark(interface, isis['interfaces'])
+                _remove_disable_mark(interface)
 
     return ret
 
@@ -231,7 +225,7 @@ def disable_interface(interface, test=False, debug=False, force=False):
     elif 'passive' in iface.keys() and iface['passive']:
         ret = {"result": False, "comment": "IS-IS passive interface cannot be disabled."}
     else:
-        ret = _is_marked_disabled(interface, isis['interfaces'])
+        ret = _is_marked_disabled(interface)
 
         if ret['out'] and not force:
             ret = { 
