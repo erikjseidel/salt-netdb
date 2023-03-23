@@ -10,10 +10,10 @@ ISIS_Configuration:
 {%- elif data['error'] %}
 isis_generate_dictionary_empty:
   test.fail_without_changes:
-    - name: {{ data['comment'] }}
+    - name: "{{ data['comment'] }}"
 
 {% else %}
 noop:
   test.succeed_without_changes:
-    - name: {{ data['comment'] }}
+    - name: "{{ data['comment'] }}"
 {%- endif %}

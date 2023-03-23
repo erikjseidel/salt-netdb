@@ -28,7 +28,7 @@ def _netdb_pull():
 
     ethernet = {}
 
-    for iface, iface_data in interfaces[router].items():
+    for iface, iface_data in interfaces[router]['interfaces'].items():
         if iface.startswith('eth') or iface.startswith('bond'):
             ethernet[iface] = iface_data
 
@@ -42,7 +42,7 @@ def _is_marked_disabled(interface):
     return __salt__['net_redis.check_entry'](_REDIS_KEY, interface)
 
 
-def _remove_disable_mark(interface, interfaces):
+def _remove_disable_mark(interface):
     """
     Removes an interface from the disabled list. Wrapper around generic net_redis entry functions.
     """
@@ -50,22 +50,16 @@ def _remove_disable_mark(interface, interfaces):
     if not interface:
         return {"result": False, "comment": "No interface selected."}
 
-    if interface not in interfaces:
-        return {"result": False, "comment": "interface not found."}
-
     return __salt__['net_redis.remove_entry'](_REDIS_KEY, interface)
 
 
-def _mark_disabled_interface(interface, interfaces):
+def _mark_disabled_interface(interface):
     """
     Adds an interface to disabled list. Wrapper around generic net_redis entry functions.
     """
 
     if not interface:
         return {"result": False, "comment": "No interface selected."}
-
-    if interface not in interfaces:
-        return {"result": False, "comment": "Interface not found."}
 
     return __salt__['net_redis.add_entry'](_REDIS_KEY, interface)
 
@@ -211,7 +205,7 @@ def enable(interface, test=False, debug=False, force=False):
             )
             # force means it didn't have the mark anyway.
             if not force and not test:
-                _remove_disable_mark(interface, ifaces.keys())
+                _remove_disable_mark(interface)
 
     return ret
 
@@ -296,7 +290,7 @@ def disable(interface, test=False, debug=False, force=False):
             )
             # force means it didn't have the mark anyway.
             if not force and not test:
-                _mark_disabled_interface(interface, ifaces.keys())
+                _mark_disabled_interface(interface)
 
     return ret
 
