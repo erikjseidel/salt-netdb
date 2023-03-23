@@ -30,7 +30,7 @@ def _netdb_pull():
 
     igp = {}
     for category, contents in data.items():
-        igp.update(contents['config_set'])
+        igp.update(contents['isis'])
 
     return { 'result': True, 'out': igp }
 
