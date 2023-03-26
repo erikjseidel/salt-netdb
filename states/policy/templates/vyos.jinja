@@ -56,60 +56,58 @@ set policy route-map {{ route_map }} rule {{ rule['number'] }} continue {{ rule[
 {%-                     endif %}
 
 {%-                     if ( rule['match'] is defined ) %}
-{%-                         if ( rule['match'][0]['community_list'] is defined ) %}
+{%-                         if ( rule['match']['community_list'] is defined ) %}
 
-set policy route-map {{ route_map }} rule {{ rule['number'] }} match community community-list {{ rule['match'][0]['community_list'] }}
-
-{%-                         endif %}
-{%-                         if ( rule['match'][0]['as_path'] is defined ) %}
-
-set policy route-map {{ route_map }} rule {{ rule['number'] }} match as-path {{ rule['match'][0]['as_path'] }}
+set policy route-map {{ route_map }} rule {{ rule['number'] }} match community community-list {{ rule['match']['community_list'] }}
 
 {%-                         endif %}
-{%-                         if ( rule['match'][0]['rpki'] is defined ) %}
+{%-                         if ( rule['match']['as_path'] is defined ) %}
 
-set policy route-map {{ route_map }} rule {{ rule['number'] }} match rpki {{ rule['match'][0]['rpki'] }}
+set policy route-map {{ route_map }} rule {{ rule['number'] }} match as-path {{ rule['match']['as_path'] }}
 
 {%-                         endif %}
-{%-                         if ( rule['match'][0]['prefix_list'] is defined ) %}
+{%-                         if ( rule['match']['rpki'] is defined ) %}
 
-set policy route-map {{ route_map }} rule {{ rule['number'] }} match {{ vyos_family }} address prefix-list {{ rule['match'][0]['prefix_list'] }}
+set policy route-map {{ route_map }} rule {{ rule['number'] }} match rpki {{ rule['match']['rpki'] }}
+
+{%-                         endif %}
+{%-                         if ( rule['match']['prefix_list'] is defined ) %}
+
+set policy route-map {{ route_map }} rule {{ rule['number'] }} match {{ vyos_family }} address prefix-list {{ rule['match']['prefix_list'] }}
 
 {%-                         endif %}
 {%-                     endif %}
 {%-                     if ( rule['set'] is defined ) %}
-{%-                         for option in rule['set'] %}
-{%-                             if ( option['local_pref'] is defined ) %}
+{%-                             if ( rule['set']['local_pref'] is defined ) %}
 
-set policy route-map {{ route_map }} rule {{ rule['number'] }} set local-preference {{ option['local_pref'] }}
-
-{%-                             endif %}
-{%-                             if ( option['origin'] is defined ) %}
-
-set policy route-map {{ route_map }} rule {{ rule['number'] }} set origin {{ option['origin'] }}
+set policy route-map {{ route_map }} rule {{ rule['number'] }} set local-preference {{ rule['set']['local_pref'] }}
 
 {%-                             endif %}
-{%-                             if ( option['community'] is defined ) %}
+{%-                             if ( rule['set']['origin'] is defined ) %}
 
-set policy route-map {{ route_map }} rule {{ rule['number'] }} set community '{{ option['community'] }}'
-
-{%-                             endif %}
-{%-                             if ( option['large_community'] is defined ) %}
-
-set policy route-map {{ route_map }} rule {{ rule['number'] }} set large-community '{{ option['large_community'] }}'
+set policy route-map {{ route_map }} rule {{ rule['number'] }} set origin {{ rule['set']['origin'] }}
 
 {%-                             endif %}
-{%-                             if ( option['as_path_exclude'] is defined ) %}
+{%-                             if ( rule['set']['community'] is defined ) %}
 
-set policy route-map {{ route_map }} rule {{ rule['number'] }} set as-path-exclude '{{ option['as_path_exclude'] }}'
-
-{%-                             endif %}
-{%-                             if ( option['next_hop'] is defined ) %}
-
-set policy route-map {{ route_map }} rule {{ rule['number'] }} set {{ vyos_family }}-next-hop {{ global }} {{ option['next_hop'] }}
+set policy route-map {{ route_map }} rule {{ rule['number'] }} set community '{{ rule['set']['community'] }}'
 
 {%-                             endif %}
-{%-                         endfor %}
+{%-                             if ( rule['set']['large_community'] is defined ) %}
+
+set policy route-map {{ route_map }} rule {{ rule['number'] }} set large-community '{{ rule['set']['large_community'] }}'
+
+{%-                             endif %}
+{%-                             if ( rule['set']['as_path_exclude'] is defined ) %}
+
+set policy route-map {{ route_map }} rule {{ rule['number'] }} set as-path-exclude '{{ rule['set']['as_path_exclude'] }}'
+
+{%-                             endif %}
+{%-                             if ( rule['set']['next_hop'] is defined ) %}
+
+set policy route-map {{ route_map }} rule {{ rule['number'] }} set {{ vyos_family }}-next-hop {{ global }} {{ rule['set']['next_hop'] }}
+
+{%-                             endif %}
 {%-                     endif %}
 {%-                 endfor %}
 {%-             endfor %}
