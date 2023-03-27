@@ -14,7 +14,8 @@ def get_grains(pillar):
 
     method = "GET"
     resp = salt.utils.http.query(
-        url=url, method=method, header_dict=headers
+        url=url, method=method, header_dict=headers, verify_ssl=False,
+        cert = [ pillar['key'], pillar['key'] ]
     )
 
     if 'body' in resp:

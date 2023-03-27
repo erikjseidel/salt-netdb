@@ -37,10 +37,11 @@ def get_column(column):
 
     method = "GET"
     resp = salt.utils.http.query(
-        url=url, method=method, header_dict=headers
+        url=url, method=method, header_dict=headers, verify_ssl=False,
+        cert = [ netdb['key'], netdb['key'] ]
     )
 
     if 'body' in resp:
         return json.loads(resp['body'])
     else:
-        return { 'result': False, 'error': True, 'comment': 'netdb api error: ' + resp['error'] }
+        return { 'result': False, 'error': True, 'comment': 'netdb api error: ' +  resp['error'] }
