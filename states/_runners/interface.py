@@ -22,15 +22,3 @@ def get(device = None, interface = None):
     netdb_answer = __utils__['netdb_runner.request'](_COLUMN, data = filt, method='GET')
 
     return netdb_answer
-
-    if not netdb_answer['result'] or not netdb_answer['out']:
-        return netdb_answer
-
-    data = {}
-
-
-
-    ret.update({'result': True})
-
-    return ret
-

@@ -49,7 +49,7 @@ def report(device = None, out = True, comment = True):
 
     netdb_answer = __utils__['netdb_runner.request'](_COLUMN, data=filt, method='GET')
 
-    if not netdb_answer['result'] or not netdb_answer['out']:
+    if not netdb_answer['result']:
         return netdb_answer
 
     data = netdb_answer['out']

@@ -2,7 +2,6 @@
 import salt.utils.http
 import json
 
-
 def __virtual__():
     netdb_config = __opts__["netdb"] if "netdb" in __opts__ else None
 
@@ -51,6 +50,3 @@ def request(column, device=None, data=None, method="GET"):
         return json.loads(resp['body'])
     else:
         return { 'result': False, 'error': True, 'comment': 'netdb api error: ' +  resp['error'] }
-
-
-
