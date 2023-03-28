@@ -13,7 +13,7 @@ def load_yaml(path, column, outputter=None, display_progress=False):
 
     data = json.dumps(conf)
 
-    return __utils__['netdb_runner.request'](column, data=data, method='POST')
+    return __utils__['netdb_runner.request'](column, data=conf, method='POST')
 
 
 def get_column (column, device=None, outputter=None, display_progress=False):

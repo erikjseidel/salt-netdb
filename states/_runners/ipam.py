@@ -45,22 +45,14 @@ def report(device = None, out = True, comment = True):
     if not isinstance(out, bool) or not isinstance(comment, bool):
         return {"result": False, "comment": "comment and out only accept true or false."}
 
-    netdb_answer = __utils__['netdb_runner.request'](_COLUMN, method='GET')
+    filt = [ device.upper(), None, None, None ]
+
+    netdb_answer = __utils__['netdb_runner.request'](_COLUMN, data=filt, method='GET')
 
     if not netdb_answer['result'] or not netdb_answer['out']:
         return netdb_answer
 
-    data = {}
-
-    # Not optimal. TBD: filter netdb query to just desired device in this case.
-    if device:
-        device = device.upper()
-        if device in netdb_answer['out']:
-            data[device] = netdb_answer['out'][device]
-        else:
-            return { 'result': False, 'comment': '%s: device not found' % device }
-    else:
-        data = netdb_answer['out']
+    data = netdb_answer['out']
 
     report_data = {}
     ret = {}

@@ -38,7 +38,7 @@ def request(column, device=None, data=None, method="GET"):
 
     if data:
         resp = salt.utils.http.query(
-            url=url, method=method, header_dict=headers, verify_ssl=False, data=data,
+            url=url, method=method, header_dict=headers, verify_ssl=False, data=json.dumps(data),
             cert = [ netdb['key'], netdb['key'] ]
         )
     else:
