@@ -1,2 +1,2 @@
-# znsl-salt
-Salt automations for ZNSL network
+# salt-netdb
+Salt automations for use with netdb
