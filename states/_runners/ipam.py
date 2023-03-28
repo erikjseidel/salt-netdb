@@ -106,7 +106,7 @@ def report(device = None, out = True, comment = True):
     return ret
 
 
-def chooser(prefix):
+def chooser(prefix, out=True, comment=True):
     """
     Show available prefixes / free IP space within a given (super)prefix.
 
@@ -114,6 +114,8 @@ def chooser(prefix):
     the queried prefix must be managed by netdb - salt.
 
     :param prefix: The prefix whose free space is to be returned.
+    :param out: Suppresses serialized dictionary out put if False.
+    :param comment: Suppresses sorted list output to comment put if False.
     :return: a dictionary consisting of the following keys:
 
        * result: (bool) True if IP addresses returned; false otherwise
@@ -126,6 +128,8 @@ def chooser(prefix):
         salt sin1-proxy ipam.chooser prefix='23.181.64.0/24'
 
     """
+    if not isinstance(out, bool) or not isinstance(comment, bool):
+        return {"result": False, "comment": "comment and out only accept true or false."}
 
     try:
         network = ip_network(prefix)
@@ -156,9 +160,25 @@ def chooser(prefix):
 
     available = IPSet( [str(network)] ) ^ IPSet(prefix_list)
 
-    out = []
+    comment_text = "Available prefixes:\n-----\n"
+    out_dict = {}
     for cidr in available.iter_cidrs():
-       out.append( '%s [%s - %s]' % ( cidr, cidr[0], cidr[-1] ))
+        prefix = str(cidr)
+        start  = str(cidr[0])
+        end    = str(cidr[-1])
 
-    return { 'result': False, 'note': _WARNING, 'comment': 'Available prefixes', 'out': out }
+        out_dict[prefix] = {
+                'start':  start,
+                'end':    end,
+                }
 
+        comment_text += '%s [%s - %s]\n' % ( prefix, start, end )
+
+    ret = { 'result': True, 'note': _WARNING }
+
+    if out:
+        ret.update({ 'out': out_dict })
+    if comment:
+        ret.update({ 'comment': comment_text })
+
+    return ret
