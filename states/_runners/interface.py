@@ -99,11 +99,9 @@ def new_addr(device, interface, address, ptr = None, roles = None, test = True):
     iface['address'][address] = None
 
     if ptr or roles:
-        iface['address'][address] = {}
-        iface['address'][address]['meta'] = {}
+        iface['address'][address] = { 'meta': {} }
         if ptr:
-            iface['address'][address]['meta']['dns'] = {}
-            iface['address'][address]['meta']['dns']['ptr'] = ptr
+            iface['address'][address]['meta']['dns'] = { 'ptr': ptr }
         if roles:
             iface['address'][address]['meta']['role'] = roles.split(',')
 
