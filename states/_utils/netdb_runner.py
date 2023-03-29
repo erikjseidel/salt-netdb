@@ -52,9 +52,9 @@ def request(column, device=None, data=None, method="GET"):
         return { 'result': False, 'error': True, 'comment': 'netdb api error: ' +  resp['error'] }
 
 
-def update(column, data, test=True):
+def _alter(column, data, method='GET', test=True):
     if not test:
-        netdb_answer = request(column, data = data, method='PUT')
+        netdb_answer = request(column, data = data, method=method)
         if netdb_answer['result']:
             netdb_answer.update({'out': data})
             return netdb_answer
@@ -62,3 +62,19 @@ def update(column, data, test=True):
             return netdb_answer
 
     return { 'result': False, 'comment': 'Test run. Database not updated.', 'out': data }
+
+
+def get(column, device=None, data=None):
+    return request(column, device, data, method="GET")
+
+
+def save(column, data, test=True):
+    return _alter(column, data=data, method='POST', test=test)
+
+
+def update(column, data, test=True):
+    return _alter(column, data=data, method='PUT', test=test)
+
+
+def delete(column, data, test=True):
+    return _alter(column, data=data, method='DELETE', test=test)

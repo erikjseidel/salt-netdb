@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import logging, copy, json
+import logging, json, re
 from ipaddress import ip_interface
 from copy import deepcopy
 
@@ -14,12 +14,20 @@ def __virtual__():
     return __virtualname__
 
 
-def _netdb_update(data, test=True):
+def _netdb_save(data, test):
+    return __utils__['netdb_runner.save'](_COLUMN, data, test)
+
+
+def _netdb_update(data, test):
     return __utils__['netdb_runner.update'](_COLUMN, data, test)
 
 
+def _netdb_delete(data, test):
+    return __utils__['netdb_runner.delete'](_COLUMN, data, test)
+
+
 def _netdb_get(data):
-    return __utils__['netdb_runner.request'](_COLUMN, data = data, method='GET')
+    return __utils__['netdb_runner.get'](_COLUMN, data = data)
 
 
 def get(device = None, interface = None):
@@ -306,3 +314,127 @@ def disable(device, interface, test = True):
     data[device]['interfaces'][interface]['disabled'] = True
 
     return _netdb_update(data, test)
+
+
+def add_tunnel(device, tunnel, description=None, type='gre', 
+        source=None, remote=None, interface=None, mtu=None, ttl=64, test=True):
+    """
+    Add a tunnel interface to a device.
+
+    :param device: device where interface is to be added
+    :param interface: interface to be added
+    :param description: an interface description (optional)
+    :param type: tunnel interface type (required, gre or l2gre)
+    :param source: source IP address for encapsulated packets (optional)
+    :param remote: remote (i.e. peer) IP address (required)
+    :param interface: parent interface for tunnel (optional)
+    :param mtu: tunnel mtu (optional)
+    :param ttl: tunnel ttl (default 64)
+    :param test: set true to perform netdb update (defaults to false)
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) true if successful; false otherwise
+       * out: dict containing updated interface and attributes
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run interface.add_tunnel sin1 tun390 interface='eth1' remote=1.1.1.1 mtu=1450
+        salt-run interface.add_tunnel sin1 tun390 remote=1.1.1.1 mtu=1450 test=false
+
+    """
+    if not isinstance(test, bool):
+        return {"result": False, "comment": "test only accepts true or false."}
+
+    tun_name = re.compile("^((tun)([0-9]{3}|[0-9]{2}|[0-9]{1}))*$")
+    if_name  = re.compile("^((dum|eth|bond)([0-9]{3}|[0-9]{2}|[0-9]{1}))*$")
+
+    if not tun_name.match(tunnel):
+        return { 'result': False, 'error': True, 'comment': 'Invalid tunnel name' }
+    if interface and not if_name.match(interface):
+        return { 'result': False, 'error': True, 'comment': 'Invalid interface name' }
+
+    if not remote:
+        return { 'result': False, 'error': True, 'comment': 'remote required for tunnel interfaces' }
+
+    try:
+        if source:
+            ip_interface(source)
+        if remote:
+            ip_interface(remote)
+    except:
+        return { 'result': False, 'error': True, 'comment': 'Invalid IP address' }
+
+    if not type or type not in ['gre', 'l2gre']:
+        return { 'result': False, 'error': True, 'comment': 'Invalid tunnel type. Must be gre or l2gre' }
+    if ttl and int(ttl) not in range(1, 255):
+        return { 'result': False, 'error': True, 'comment': 'ttl must be between 1 and 255' }
+    if mtu and int(mtu) not in range(576, 9172):
+        return { 'result': False, 'error': True, 'comment': 'mtu must be between 576 and 9172' }
+
+    device = device.upper()
+    filt = [ device, None, None, tunnel ]
+    netdb_answer = _netdb_get(filt)
+
+    if ( 'out'        in netdb_answer and
+         device       in netdb_answer['out'] and
+         'interfaces' in netdb_answer['out'][device] and
+         tunnel       in netdb_answer['out'][device]['interfaces']):
+        return { 'result': False, 'comment': 'Interface already exists' }
+
+    tun = { 'type': type }
+
+    if description:
+        tun['description'] = description
+    if source:
+        tun['source'] = source
+    if remote:
+        tun['remote'] = remote
+    if interface:
+        tun['interface'] = interface
+    if mtu:
+        tun['mtu'] = mtu
+    if ttl:
+        tun['ttl'] = ttl
+
+    data = { device: { 'interfaces': { tunnel : tun } } }
+
+    return _netdb_save(data, test)
+
+
+def delete(device, interface, test=True):
+    """
+    Delete an interface.
+
+    :param device: device where interface is located
+    :param interface: interface to be deleted
+    :param test: set true to perform netdb update (defaults to false)
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) true if successful; false otherwise
+       * out: dict containing updated interface and attributes
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run interface.delete sin3 tun376 test=false
+        salt-run interface.delete device=sin3 interface=tun376
+
+    """
+
+    if not isinstance(test, bool):
+        return {"result": False, "comment": "test only accepts true or false."}
+
+    device = device.upper()
+    filt = [ device, None, None, interface ]
+    netdb_answer = _netdb_get(filt)
+
+    if not netdb_answer['result']:
+        return netdb_answer
+
+    ret = _netdb_delete(filt, test)
+    ret.update({ 'out': netdb_answer['out'] })
+
+    return ret
