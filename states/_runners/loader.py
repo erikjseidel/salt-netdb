@@ -4,7 +4,6 @@ import yaml, json
 
 _COLUMNS=[ 'interface', 'igp', 'bgp', 'firewall', 'policy', 'device' ]
 
-
 def _netdb_save(column, data=None, test=True):
     return __utils__['netdb_runner.save'](column, data, test)
 
