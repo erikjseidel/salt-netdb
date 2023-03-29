@@ -10,6 +10,10 @@ log = logging.getLogger(__file__)
 
 _COLUMN = 'interface'
 
+_VYOS_ETH = "^(eth|bond)([0-9]{1,3})(?:(\.)([0-9]{1,4}))$"
+_VYOS_TUN = "^(tun)([0-9]{1,3})$"
+_VYOS_DUM = "^(dum)([0-9]{1,3})$"
+
 def __virtual__():
     return __virtualname__
 
@@ -347,12 +351,12 @@ def add_tunnel(device, tunnel, description=None, type='gre',
     if not isinstance(test, bool):
         return {"result": False, "comment": "test only accepts true or false."}
 
-    tun_name = re.compile("^((tun)([0-9]{3}|[0-9]{2}|[0-9]{1}))*$")
-    if_name  = re.compile("^((dum|eth|bond)([0-9]{3}|[0-9]{2}|[0-9]{1}))*$")
+    tun_re = re.compile(_VYOS_TUN)
+    if_re  = re.compile(_VYOS_ETH)
 
-    if not tun_name.match(tunnel):
+    if not tun_re.match(tunnel):
         return { 'result': False, 'error': True, 'comment': 'Invalid tunnel name' }
-    if interface and not if_name.match(interface):
+    if interface and not if_re.match(interface):
         return { 'result': False, 'error': True, 'comment': 'Invalid interface name' }
 
     if not remote:
