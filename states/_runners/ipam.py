@@ -3,6 +3,7 @@
 import logging, copy
 from netaddr   import IPSet
 from ipaddress import ip_interface, ip_network
+from copy      import deepcopy
 
 __virtualname__ = "ipam"
 
@@ -75,7 +76,7 @@ def report(device = None, out = True, comment = True):
                         report_data[cidr[0]]['description'] = iface_data['description']
 
                     if 'meta' in addr_data:
-                        report_data[cidr[0]]['meta'] = copy.deepcopy(addr_data['meta'])
+                        report_data[cidr[0]]['meta'] = deepcopy(addr_data['meta'])
 
         if out:
             ret.update({'out': report_data, 'result': True})
