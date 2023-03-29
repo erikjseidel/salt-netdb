@@ -50,3 +50,15 @@ def request(column, device=None, data=None, method="GET"):
         return json.loads(resp['body'])
     else:
         return { 'result': False, 'error': True, 'comment': 'netdb api error: ' +  resp['error'] }
+
+
+def update(column, data, test=True):
+    if not test:
+        netdb_answer = request(column, data = data, method='PUT')
+        if netdb_answer['result']:
+            netdb_answer.update({'out': data})
+            return netdb_answer
+        else:
+            return netdb_answer
+
+    return { 'result': False, 'comment': 'Test run. Database not updated.', 'out': data }

@@ -115,10 +115,12 @@ def generate():
     disabled_tunnels = _get_disabled_tunnels()['out']
 
     for tunnel, settings in tunnels.items():
-        if tunnel in disabled_tunnels:
-            settings['disabled'] = True
-        else:
-            settings['disabled'] = False
+        # netdb overrides redis if setting present there.
+        if 'disabled' not in settings:
+            if tunnel in disabled_tunnels:
+                settings['disabled'] = True
+            else:
+                settings['disabled'] = False
 
         if 'key' in settings:
             settings['key_vyos'] = _ip2long(settings['key'])
