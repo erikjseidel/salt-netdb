@@ -1,15 +1,23 @@
 
 from pathlib import Path
 import yaml, json
-import salt.utils.http
 
 _COLUMNS=[ 'interface', 'igp', 'bgp', 'firewall', 'policy', 'device' ]
+
+
+def _netdb_save(column, data=None, test=True):
+    return __utils__['netdb_runner.save'](column, data, test)
+
 
 def _netdb_update(column, data, test=True):
     return __utils__['netdb_runner.update'](column, data, test)
 
 
-def load_yaml(column, path, outputter=None, display_progress=False):
+def _netdb_get(column, data=None):
+    return __utils__['netdb_runner.get'](column, data = data)
+
+
+def load_yaml(column, path, test=True, outputter=None, display_progress=False):
     """
     Bulk load configuration data from a YAML file. Only elements
     that do not exist will be loaded.
@@ -35,7 +43,7 @@ def load_yaml(column, path, outputter=None, display_progress=False):
 
     data = json.dumps(conf)
 
-    return __utils__['netdb_runner.request'](column, data=conf, method='POST')
+    return _netdb_save(column, data=conf, test=test)
 
 
 def update_from_yaml(column, path, test=True, outputter=None, display_progress=False):
@@ -90,7 +98,7 @@ def get_column (column, raw=False, outputter=None, display_progress=False):
     if column not in _COLUMNS:
         return { 'result': False, 'comment': 'Invalid column' }
 
-    netdb_answer = __utils__['netdb_runner.request'](column, method='GET')
+    netdb_answer = _netdb_get(column)
 
     if netdb_answer['result'] and raw:
         return yaml.dump(netdb_answer['out'])
@@ -98,8 +106,8 @@ def get_column (column, raw=False, outputter=None, display_progress=False):
     return netdb_answer
 
 
-def query (column=None, set_id=None, category=None, family=None, 
-                            element=None, raw=False, outputter=None, display_progress=False):
+def query (column, set_id=None, category=None, family=None, 
+                    element=None, raw=False, outputter=None, display_progress=False):
     """
     Query netdb by element identifiers and print results to stdout.
 
@@ -130,7 +138,7 @@ def query (column=None, set_id=None, category=None, family=None,
 
     filt = [ set_id, category, family, element ]
 
-    netdb_answer = __utils__['netdb_runner.request'](column, data = filt, method='GET')
+    netdb_answer = _netdb_get(column, data = filt)
 
     if netdb_answer['result'] and raw:
         return yaml.dump(netdb_answer['out'])

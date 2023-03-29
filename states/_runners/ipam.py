@@ -20,6 +20,10 @@ def __virtual__():
     return __virtualname__
 
 
+def _netdb_get(data = None):
+    return __utils__['netdb_runner.get'](_COLUMN, data = data)
+
+
 def report(device = None, out = True, comment = True):
     """
     Show salt managed IP addresses.
@@ -46,9 +50,9 @@ def report(device = None, out = True, comment = True):
     if not isinstance(out, bool) or not isinstance(comment, bool):
         return {"result": False, "comment": "comment and out only accept true or false."}
 
-    filt = [ device.upper(), None, None, None ]
+    filt = [ device.upper() if device else None, None, None, None ]
 
-    netdb_answer = __utils__['netdb_runner.request'](_COLUMN, data=filt, method='GET')
+    netdb_answer = _netdb_get(filt)
 
     if not netdb_answer['result']:
         return netdb_answer
@@ -129,7 +133,7 @@ def chooser(prefix, out=True, comment=True):
     except:
         return { 'result': False, 'error': True, 'comment': 'Invalid prefix' }
 
-    netdb_answer = __utils__['netdb_runner.request'](_COLUMN, method='GET')
+    netdb_answer = _netdb_get()
 
     if not netdb_answer['result'] or not netdb_answer['out']:
         return netdb_answer
