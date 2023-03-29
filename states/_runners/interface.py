@@ -428,7 +428,6 @@ def delete(device, interface, test=True):
         salt-run interface.delete device=sin3 interface=tun376
 
     """
-
     if not isinstance(test, bool):
         return {"result": False, "comment": "test only accepts true or false."}
 
