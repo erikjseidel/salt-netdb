@@ -21,10 +21,10 @@ def __virtual__():
 
 def report(device = None, out = True, comment = True):
     """
-    Show salt managed IP addresses assigned to this router.
+    Show salt managed IP addresses.
 
-    A sorted list of the router's salt managed IP addresses is also displayed in
-    the comment.
+    A sorted list of salt managed IP addresses is also displayed in the
+    comment.
 
     :param device: Limit report to only the specified device.
     :param out: Suppresses serialized dictionary out put if False.
@@ -37,8 +37,8 @@ def report(device = None, out = True, comment = True):
 
     .. code-block:: bash
 
-        salt sin1-proxy ipam.report
-        salt sin1-proxy ipam.report comment=False
+        salt-run ipam.report
+        salt-run ipam.report sin1 comment=False
 
     """
 
@@ -117,7 +117,7 @@ def chooser(prefix, out=True, comment=True):
 
     .. code-block:: bash
 
-        salt sin1-proxy ipam.chooser prefix='23.181.64.0/24'
+        salt-run ipam.chooser prefix='23.181.64.0/24'
 
     """
     if not isinstance(out, bool) or not isinstance(comment, bool):
