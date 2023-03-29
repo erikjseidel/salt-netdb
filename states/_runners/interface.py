@@ -10,9 +10,10 @@ log = logging.getLogger(__file__)
 
 _COLUMN = 'interface'
 
-_VYOS_ETH = "^(eth|bond)([0-9]{1,3})(?:(\.)([0-9]{1,4}))$"
-_VYOS_TUN = "^(tun)([0-9]{1,3})$"
-_VYOS_DUM = "^(dum)([0-9]{1,3})$"
+_VYOS_ETH  = "^(eth|bond)([0-9]{1,3})(?:(\.)([0-9]{1,4})){0,1}$"
+_VYOS_VLAN = "^(eth|bond)([0-9]{1,3})(\.)([0-9]{1,4})$"
+_VYOS_TUN  = "^(tun)([0-9]{1,3})$"
+_VYOS_DUM  = "^(dum)([0-9]{1,3})$"
 
 def __virtual__():
     return __virtualname__
