@@ -51,6 +51,17 @@ def _interface_check(device, interface):
     return False
 
 
+def _vlan_check(vlan):
+    """
+    Checks the validity of vlan interfaces.
+    """
+    if ( re.compile(_VYOS_VLAN).match(vlan) and
+            int(vlan.split('.')[1]) in range(1, 4096) ):
+        return True
+
+    return False
+
+
 def get(device = None, interface = None):
     """
     Show salt managed interfaces filtered by device and/or interface name.
@@ -462,6 +473,9 @@ def copy(device, interface, new_dev, new_int, test=True):
     if not type_dict[if_type].match(new_int):
         return {'result': False, 'comment': '%s: source and target interface must be the same type.' % new_int }
 
+    if if_type == 'vlan' and not _vlan_check(new_int):
+        return {'result': False, 'comment': '%s: vlan id must be between 1 and 4095.' % new_int }
+
     device = device.upper()
     filt = [ device, None, None, interface ]
     netdb_answer = _netdb_get(filt)
@@ -476,6 +490,13 @@ def copy(device, interface, new_dev, new_int, test=True):
     data = deepcopy(netdb_answer['out'])
     data[new_dev] = data.pop(device)
     data[new_dev]['interfaces'][new_int] = data[new_dev]['interfaces'].pop(interface)
+
+    # the case of vlan copies correct the vlan id and parent interface.
+    if if_type == 'vlan':
+        data[new_dev]['interfaces'][new_int]['vlan'] = {
+                'id'     : new_int.split('.')[1],
+                'parent' : new_int.split('.')[0],
+                }
 
     return _netdb_save(data=data, test=test)
 
