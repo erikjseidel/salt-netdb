@@ -10,10 +10,15 @@ log = logging.getLogger(__file__)
 
 _COLUMN = 'interface'
 
-_VYOS_ETH  = "^(eth|bond)([0-9]{1,3})(?:(\.)([0-9]{1,4})){0,1}$"
-_VYOS_VLAN = "^(eth|bond)([0-9]{1,3})(\.)([0-9]{1,4})$"
-_VYOS_TUN  = "^(tun)([0-9]{1,3})$"
-_VYOS_DUM  = "^(dum)([0-9]{1,3})$"
+# Supported vyos if types
+_VYOS_VLAN  = "^(eth|bond)([0-9]{1,3})(\.)([0-9]{1,4})$"
+_VYOS_ETH   = "^(eth)([0-9]{1,3})$"
+_VYOS_LAG   = "^(bond)([0-9]{1,3})$"
+_VYOS_TUN   = "^(tun)([0-9]{1,3})$"
+_VYOS_DUM   = "^(dum)([0-9]{1,3})$"
+
+# Used to verify parent interfaces for tunnels
+_VYOS_PARENT  = "^(eth|bond)([0-9]{1,3})(?:(\.)([0-9]{1,4})){0,1}$"
 
 def __virtual__():
     return __virtualname__
@@ -33,6 +38,17 @@ def _netdb_delete(data, test):
 
 def _netdb_get(data):
     return __utils__['netdb_runner.get'](_COLUMN, data = data)
+
+
+def _interface_check(device, interface):
+    """
+    Returns True if the device / interface pair exists; False otherwise
+    """
+    filt = [ device, None, None, interface ]
+    if _netdb_get(filt)['result']:
+        return True
+
+    return False
 
 
 def get(device = None, interface = None):
@@ -353,7 +369,7 @@ def add_tunnel(device, tunnel, description=None, type='gre',
         return {"result": False, "comment": "test only accepts true or false."}
 
     tun_re = re.compile(_VYOS_TUN)
-    if_re  = re.compile(_VYOS_ETH)
+    if_re  = re.compile(_VYOS_PARENT)
 
     if not tun_re.match(tunnel):
         return { 'result': False, 'error': True, 'comment': 'Invalid tunnel name' }
@@ -379,13 +395,7 @@ def add_tunnel(device, tunnel, description=None, type='gre',
         return { 'result': False, 'error': True, 'comment': 'mtu must be between 576 and 9172' }
 
     device = device.upper()
-    filt = [ device, None, None, tunnel ]
-    netdb_answer = _netdb_get(filt)
-
-    if ( 'out'        in netdb_answer and
-         device       in netdb_answer['out'] and
-         'interfaces' in netdb_answer['out'][device] and
-         tunnel       in netdb_answer['out'][device]['interfaces']):
+    if _interface_check(device, tunnel):
         return { 'result': False, 'comment': 'Interface already exists' }
 
     tun = { 'type': type }
@@ -406,6 +416,68 @@ def add_tunnel(device, tunnel, description=None, type='gre',
     data = { device: { 'interfaces': { tunnel : tun } } }
 
     return _netdb_save(data, test)
+
+
+def copy(device, interface, new_dev, new_int, test=True):
+    """
+    Copy an interface. New interface will have all the same
+    attributes as the original. Interface type must match for this
+    operation to succeed.
+
+    :param device: device where source interface is located
+    :param interface: source interface to be copied 
+    :param new_dev: device where new interface is to be located
+    :param new_int: new (i.e. destination) interface
+    :param test: set true to perform netdb update (defaults to false)
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) true if successful; false otherwise
+       * out: dict containing updated interface and attributes
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run interface.copy sin3 tun376 sin1 tun390
+        salt-run interface.copy sin3 tun376 sin1 tun390 test=false
+
+    """
+    if_type = None
+    type_dict = {
+            'tun'  :  re.compile(_VYOS_TUN),
+            'eth'  :  re.compile(_VYOS_ETH),
+            'vlan' :  re.compile(_VYOS_VLAN),
+            'lag'  :  re.compile(_VYOS_LAG),
+            'dum'  :  re.compile(_VYOS_DUM),
+            }
+
+    for type in type_dict.keys():
+        if type_dict[type].match(interface):
+            if_type = type
+            break
+
+    if not if_type:
+        return {'result': False, 'comment': '%s: unsupported interface type.' % interface }
+
+    if not type_dict[if_type].match(new_int):
+        return {'result': False, 'comment': '%s: source and target interface must be the same type.' % new_int }
+
+    device = device.upper()
+    filt = [ device, None, None, interface ]
+    netdb_answer = _netdb_get(filt)
+
+    if not netdb_answer['result']:
+        return netdb_answer
+
+    new_dev = new_dev.upper()
+    if _interface_check(new_dev, new_int):
+        return { 'result': False, 'comment': '%s says: Interface already exists' % new_dev }
+
+    data = deepcopy(netdb_answer['out'])
+    data[new_dev] = data.pop(device)
+    data[new_dev]['interfaces'][new_int] = data[new_dev]['interfaces'].pop(interface)
+
+    return _netdb_save(data=data, test=test)
 
 
 def delete(device, interface, test=True):
