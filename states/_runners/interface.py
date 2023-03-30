@@ -94,7 +94,7 @@ def _common_options_checker(interface, type, description, mtu):
             'l2gre'  :  re.compile(_VYOS_TUN),
             'vlan'   :  re.compile(_VYOS_VLAN),
             'lacp'   :  re.compile(_VYOS_LAG),
-            'dum'    :  re.compile(_VYOS_DUM),
+            'dummy'  :  re.compile(_VYOS_DUM),
             }
 
     ret = { 'result': False, 'error': True }
