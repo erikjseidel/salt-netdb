@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging, json, re
-from ipaddress import ip_interface
+from ipaddress import ip_interface, IPv4Address
 from copy import deepcopy
 
 __virtualname__ = "interface"
@@ -40,6 +40,42 @@ def _netdb_get(data):
     return __utils__['netdb_runner.get'](_COLUMN, data = data)
 
 
+def _testable(func):
+    """
+    Checks if test is type bool.
+    """
+    def decorator(*args, test=True, **kwargs):
+        if not isinstance(test, bool):
+            return {"result": False, "comment": "test only accepts true or false."}
+
+        kwargs.update({ 'test': test })
+        return func(*args, **kwargs)
+    return decorator
+
+
+def _netdb_interface(func):
+    """
+    For extant interfaces: Queries the device / interface pair from netdb.
+
+    Sends the data to child function if found. Returns the netdb api error
+    message otherwise.
+    """
+    @_testable
+    def decorator(*args, Test=True, **kwargs):
+        args = list(args)
+        args[0] = args[0].upper()
+
+        filt = [ args[0], None, None, args[1] ]
+        netdb_answer = _netdb_get(filt)
+
+        if not netdb_answer['result']:
+            return netdb_answer
+
+        kwargs.update({ 'data': netdb_answer['out'] })
+        return func(*args, **kwargs)
+    return decorator
+
+
 def _interface_check(device, interface):
     """
     Returns True if the device / interface pair exists; False otherwise
@@ -49,6 +85,93 @@ def _interface_check(device, interface):
         return True
 
     return False
+
+
+def _common_options_checker(interface, type, description, mtu):
+    type_dict = {
+            'eth'    :  re.compile(_VYOS_ETH),
+            'gre'    :  re.compile(_VYOS_TUN),
+            'l2gre'  :  re.compile(_VYOS_TUN),
+            'vlan'   :  re.compile(_VYOS_VLAN),
+            'lacp'   :  re.compile(_VYOS_LAG),
+            'dum'    :  re.compile(_VYOS_DUM),
+            }
+
+    ret = { 'result': False, 'error': True }
+
+    if type not in type_dict.keys():
+        ret.update({'comment': 'Invalid interface type. Please see documentation for supported types.' })
+        return ret
+
+    if not type_dict[type].match(interface):
+        ret.update({'comment': 'Interface name incompatable with interface type.' })
+        return ret
+
+    if description and (not isinstance(description, str) or len(description) > 100):
+        ret.update({'comment': 'Interface description must be a string of 100 characters or less.' })
+        return ret
+
+    if mtu and mtu not in range(576, 9173):
+        ret.update({'comment': 'Interface MTU must be between 576 and 9172.' })
+        return ret
+
+    return { 'result': True, 'error': False }
+
+
+def _tunnel_options_checker(remote, source, ttl, parent, key):
+    ret = { 'result': False, 'error': True }
+
+    try:
+        ip_interface(remote)
+    except:
+        ret.update({ 'comment': 'Invalid tunnel remote IP address' })
+        return ret
+
+    try:
+        if source:
+            ip_interface(source)
+    except:
+        ret.update({ 'comment': 'Invalid tunnel source IP address' })
+        return ret
+
+    if ttl and int(ttl) not in range(1, 256):
+        ret.update({ 'comment': 'ttl must be between 1 and 255' })
+        return ret
+
+    if parent and not re.compile(_VYOS_PARENT).match(parent):
+        ret.update({ 'comment': 'Invalid parent interface name' })
+        return ret
+
+    try:
+        if key:
+            IPv4Address(key)
+    except:
+        ret.update({ 'comment': 'Invalid tunnel key value' })
+        return ret
+
+    return { 'result': True, 'error': False }
+
+
+def _lacp_options_checker(lacp_hash, lacp_members, lacp_min_links, lacp_rate):
+    ret = { 'result': False, 'error': True }
+
+    if not lacp_hash or lacp_hash not in ['layer2+3', 'layer3+4']:
+        ret.update({ 'comment': 'Invalid LACP hash. Must be "layer2+3" or "layer3+4"' })
+        return ret
+
+    if not isinstance(lacp_members, list) or len(lacp_members) not in range(1, 6):
+        ret.update({ 'comment': 'LACP interface must have between 1 and 5 member ports' })
+        return ret
+
+    if not lacp_min_links or int(lacp_min_links) < 1:
+        ret.update({ 'comment': 'LACP interface min links cannot be less than one' })
+        return ret
+
+    if not lacp_rate or lacp_rate not in ['fast', 'slow']:
+        ret.update({ 'comment': 'LACP rate must be either "fast" or "slow"' })
+        return ret
+
+    return { 'result': True, 'error': False }
 
 
 def _vlan_check(vlan):
@@ -62,7 +185,7 @@ def _vlan_check(vlan):
     return False
 
 
-def get(device = None, interface = None):
+def get(device=None, interface=None):
     """
     Show salt managed interfaces filtered by device and/or interface name.
 
@@ -89,7 +212,8 @@ def get(device = None, interface = None):
     return netdb_answer
 
 
-def add_addr(device, interface, address, ptr = None, roles = None, test = True):
+@_netdb_interface
+def add_addr(device, interface, address, ptr=None, roles=None, test=True, data=None):
     """
     Add an IP address to an interface.
 
@@ -111,22 +235,11 @@ def add_addr(device, interface, address, ptr = None, roles = None, test = True):
         salt-run interface.get interface=tun376
 
     """
-    if not isinstance(test, bool):
-        return {"result": False, "comment": "test only accepts true or false."}
-
     try:
         ip_interface(address)
     except:
         return { 'result': False, 'error': True, 'comment': 'Invalid IP address' }
 
-    device = device.upper()
-    filt = [ device, None, None, interface ]
-    netdb_answer = _netdb_get(filt)
-
-    if not netdb_answer['result']:
-        return netdb_answer
-
-    data = netdb_answer['out']
     iface = data[device]['interfaces'][interface]
 
     if 'address' not in iface:
@@ -146,7 +259,8 @@ def add_addr(device, interface, address, ptr = None, roles = None, test = True):
     return _netdb_update(data, test)
 
 
-def delete_addr(device, interface, address, test = True):
+@_netdb_interface
+def delete_addr(device, interface, address, test=True, data=None):
     """
     Delete an IP address from an interface.
 
@@ -167,22 +281,11 @@ def delete_addr(device, interface, address, test = True):
         salt-run interface.get interface=tun376
 
     """
-    if not isinstance(test, bool):
-        return {"result": False, "comment": "test only accepts true or false."}
-
     try:
         ip_interface(address)
     except:
         return { 'result': False, 'error': True, 'comment': 'Invalid IP address' }
 
-    device = device.upper()
-    filt = [ device, None, None, interface ]
-    netdb_answer = _netdb_get(filt)
-
-    if not netdb_answer['result']:
-        return netdb_answer
-
-    data = netdb_answer['out']
     iface = data[device]['interfaces'][interface]
 
     if 'address' not in iface or address not in iface['address']:
@@ -193,7 +296,8 @@ def delete_addr(device, interface, address, test = True):
     return _netdb_update(data, test)
 
 
-def update_addr(device, interface, address, ptr = None, roles = None, new_addr = None, test = True):
+@_netdb_interface
+def update_addr(device, interface, address, ptr=None, roles=None, new_addr=None, test=True, data=None):
     """
     Update an IP address to an interface.
 
@@ -221,9 +325,6 @@ def update_addr(device, interface, address, ptr = None, roles = None, new_addr =
     if not new_addr and not roles and not ptr:
         return { 'result': False, 'error': True, 'comment': 'Nothing to update' }
 
-    if not isinstance(test, bool):
-        return {"result": False, "comment": "test only accepts true or false."}
-
     try:
         ip_interface(address)
         if new_addr:
@@ -231,14 +332,6 @@ def update_addr(device, interface, address, ptr = None, roles = None, new_addr =
     except:
         return { 'result': False, 'error': True, 'comment': 'Invalid IP address' }
 
-    device = device.upper()
-    filt = [ device, None, None, interface ]
-    netdb_answer = _netdb_get(filt)
-
-    if not netdb_answer['result']:
-        return netdb_answer
-
-    data = netdb_answer['out']
     iface = data[device]['interfaces'][interface]
 
     if 'address' in iface.keys() and address in iface['address'].keys():
@@ -272,7 +365,8 @@ def update_addr(device, interface, address, ptr = None, roles = None, new_addr =
     return _netdb_update(data, test)
 
 
-def enable(device, interface, test = True):
+@_netdb_interface
+def enable(device, interface, test=True, data=None):
     """
     Remove the disabled mark from an interface. State must be applied in
     order to activate. If you wish to disable without applying state please
@@ -294,23 +388,13 @@ def enable(device, interface, test = True):
         salt-run interface.enable device=sin3 interface=tun376
 
     """
-    if not isinstance(test, bool):
-        return {"result": False, "comment": "test only accepts true or false."}
-
-    device = device.upper()
-    filt = [ device, None, None, interface ]
-    netdb_answer = _netdb_get(filt)
-
-    if not netdb_answer['result']:
-        return netdb_answer
-
-    data = netdb_answer['out']
     data[device]['interfaces'][interface].pop('disabled', None)
 
     return _netdb_update(data, test)
 
 
-def disable(device, interface, test = True):
+@_netdb_interface
+def disable(device, interface, test=True, data=None):
     """
     Mark an interface as disabled. State must be applied in order to
     activate. If you wish to disable without applying state please run
@@ -332,24 +416,15 @@ def disable(device, interface, test = True):
         salt-run interface.disable device=sin3 interface=tun376
 
     """
-    if not isinstance(test, bool):
-        return {"result": False, "comment": "test only accepts true or false."}
-
-    device = device.upper()
-    filt = [ device, None, None, interface ]
-    netdb_answer = _netdb_get(filt)
-
-    if not netdb_answer['result']:
-        return netdb_answer
-
-    data = netdb_answer['out']
     data[device]['interfaces'][interface]['disabled'] = True
 
     return _netdb_update(data, test)
 
 
-def add_tunnel(device, tunnel, description=None, type='gre', 
-        source=None, remote=None, interface=None, mtu=None, ttl=64, test=True):
+@_testable
+def add(device, interface, description=None, type='eth', mtu=None, 
+        lacp_hash=None, lacp_members=None, lacp_min_links=None, lacp_rate=None,
+        source=None, remote=None, tunnel_parent=None, ttl=None, key=None, test=True):
     """
     Add a tunnel interface to a device.
 
@@ -379,57 +454,72 @@ def add_tunnel(device, tunnel, description=None, type='gre',
     if not isinstance(test, bool):
         return {"result": False, "comment": "test only accepts true or false."}
 
-    tun_re = re.compile(_VYOS_TUN)
-    if_re  = re.compile(_VYOS_PARENT)
+    ret = _common_options_checker(interface, type, description, mtu)
+    if ret['error']: return ret
 
-    if not tun_re.match(tunnel):
-        return { 'result': False, 'error': True, 'comment': 'Invalid tunnel name' }
-    if interface and not if_re.match(interface):
-        return { 'result': False, 'error': True, 'comment': 'Invalid interface name' }
+    if type in ['gre', 'l2gre']:
+        ret = _tunnel_options_checker(remote, source, ttl, tunnel_parent, key)
+        if ret['error']: return ret
 
-    if not remote:
-        return { 'result': False, 'error': True, 'comment': 'remote required for tunnel interfaces' }
+    elif any([source, remote, tunnel_parent, ttl, key]):
+        return {'result': False, 'comment': 'source, remote, tunnel_parent, ttl, key are for tunnels only' }
 
-    try:
-        if source:
-            ip_interface(source)
-        if remote:
-            ip_interface(remote)
-    except:
-        return { 'result': False, 'error': True, 'comment': 'Invalid IP address' }
+    if type == 'lacp':
+        if isinstance(lacp_members, str): lacp_members = lacp_members.split(',')
+        ret = _lacp_options_checker(lacp_hash, lacp_members, lacp_min_links, lacp_rate)
+        if ret['error']: return ret
 
-    if not type or type not in ['gre', 'l2gre']:
-        return { 'result': False, 'error': True, 'comment': 'Invalid tunnel type. Must be gre or l2gre' }
-    if ttl and int(ttl) not in range(1, 255):
-        return { 'result': False, 'error': True, 'comment': 'ttl must be between 1 and 255' }
-    if mtu and int(mtu) not in range(576, 9172):
-        return { 'result': False, 'error': True, 'comment': 'mtu must be between 576 and 9172' }
+    elif any([lacp_hash, lacp_members, lacp_min_links, lacp_rate]):
+        return {'result': False, 'comment': 'lacp* arguments can only be used with lacp/lag type' }
+
+    if type == 'vlan' and not _vlan_check(interface):
+        return {'result': False, 'comment': '%s: vlan id must be between 1 and 4095.' % interface }
+
+    if type == 'eth':
+        type = 'ethernet'
 
     device = device.upper()
-    if _interface_check(device, tunnel):
+    if _interface_check(device, interface):
         return { 'result': False, 'comment': 'Interface already exists' }
 
-    tun = { 'type': type }
+    new = { 'type': type }
 
     if description:
-        tun['description'] = description
-    if source:
-        tun['source'] = source
-    if remote:
-        tun['remote'] = remote
-    if interface:
-        tun['interface'] = interface
+        new['description'] = description
     if mtu:
-        tun['mtu'] = mtu
-    if ttl:
-        tun['ttl'] = ttl
+        new['mtu'] = mtu
 
-    data = { device: { 'interfaces': { tunnel : tun } } }
+    if type == 'vlan':
+        new['vlan'] = {
+                'parent' : interface.split('.')[0],
+                'id'     : interface.split('.')[1],
+                }
+
+    if type == 'lacp':
+        new['lacp'] = {
+                'hash_policy' : lacp_hash,
+                'members'     : lacp_members,
+                'min_links'   : lacp_min_links,
+                'rate'        : lacp_rate,
+                }
+
+    if type == 'tunnel':
+        if source:
+            new['source'] = source
+        if remote:
+            new['remote'] = remote
+        if interface:
+            new['interface'] = interface
+        if ttl:
+            new['ttl'] = ttl
+
+    data = { device: { 'interfaces': { interface : new } } }
 
     return _netdb_save(data, test)
 
 
-def copy(device, interface, new_dev, new_int, test=True):
+@_netdb_interface
+def copy(device, interface, new_dev, new_int, test=True, data=None):
     """
     Copy an interface. New interface will have all the same
     attributes as the original. Interface type must match for this
@@ -476,32 +566,25 @@ def copy(device, interface, new_dev, new_int, test=True):
     if if_type == 'vlan' and not _vlan_check(new_int):
         return {'result': False, 'comment': '%s: vlan id must be between 1 and 4095.' % new_int }
 
-    device = device.upper()
-    filt = [ device, None, None, interface ]
-    netdb_answer = _netdb_get(filt)
-
-    if not netdb_answer['result']:
-        return netdb_answer
-
     new_dev = new_dev.upper()
     if _interface_check(new_dev, new_int):
         return { 'result': False, 'comment': '%s says: Interface already exists' % new_dev }
 
-    data = deepcopy(netdb_answer['out'])
     data[new_dev] = data.pop(device)
     data[new_dev]['interfaces'][new_int] = data[new_dev]['interfaces'].pop(interface)
 
     # the case of vlan copies correct the vlan id and parent interface.
     if if_type == 'vlan':
         data[new_dev]['interfaces'][new_int]['vlan'] = {
-                'id'     : new_int.split('.')[1],
+                'id'     : int(new_int.split('.')[1]),
                 'parent' : new_int.split('.')[0],
                 }
 
     return _netdb_save(data=data, test=test)
 
 
-def delete(device, interface, test=True):
+@_netdb_interface
+def delete(device, interface, test=True, data=None):
     """
     Delete an interface.
 
@@ -521,17 +604,9 @@ def delete(device, interface, test=True):
         salt-run interface.delete device=sin3 interface=tun376
 
     """
-    if not isinstance(test, bool):
-        return {"result": False, "comment": "test only accepts true or false."}
-
-    device = device.upper()
     filt = [ device, None, None, interface ]
-    netdb_answer = _netdb_get(filt)
-
-    if not netdb_answer['result']:
-        return netdb_answer
 
     ret = _netdb_delete(filt, test)
-    ret.update({ 'out': netdb_answer['out'] })
+    ret.update({ 'out': data })
 
     return ret
