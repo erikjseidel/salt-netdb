@@ -17,6 +17,15 @@ _VYOS_LAG   = "^(bond)([0-9]{1,3})$"
 _VYOS_TUN   = "^(tun)([0-9]{1,3})$"
 _VYOS_DUM   = "^(dum)([0-9]{1,3})$"
 
+_TYPE_DICT = {
+        'eth'    :  re.compile(_VYOS_ETH),
+        'gre'    :  re.compile(_VYOS_TUN),
+        'l2gre'  :  re.compile(_VYOS_TUN),
+        'vlan'   :  re.compile(_VYOS_VLAN),
+        'lacp'   :  re.compile(_VYOS_LAG),
+        'dummy'  :  re.compile(_VYOS_DUM),
+        }
+
 # Used to verify parent interfaces for tunnels
 _VYOS_PARENT  = "^(eth|bond)([0-9]{1,3})(?:(\.)([0-9]{1,4})){0,1}$"
 
@@ -63,12 +72,13 @@ def _netdb_interface(func):
     @_testable
     def decorator(*args, Test=True, **kwargs):
         args = list(args)
-        args[0] = args[0].upper()
+        args[0] = args[0].upper()  # args[0] is the device; args[1] is the interface
 
         filt = [ args[0], None, None, args[1] ]
         netdb_answer = _netdb_get(filt)
 
         if not netdb_answer['result']:
+            netdb_answer.update({ 'comment': '%s: Interface not found' % args[1] })
             return netdb_answer
 
         kwargs.update({ 'data': netdb_answer['out'] })
@@ -87,23 +97,27 @@ def _interface_check(device, interface):
     return False
 
 
-def _common_options_checker(interface, type, description, mtu):
-    type_dict = {
-            'eth'    :  re.compile(_VYOS_ETH),
-            'gre'    :  re.compile(_VYOS_TUN),
-            'l2gre'  :  re.compile(_VYOS_TUN),
-            'vlan'   :  re.compile(_VYOS_VLAN),
-            'lacp'   :  re.compile(_VYOS_LAG),
-            'dummy'  :  re.compile(_VYOS_DUM),
-            }
+def _get_interface_type(interface):
+    # Won't be a perfect match in case of tunnels but as attributes are
+    # the same it should not be a problem.
+    for if_type in _TYPE_DICT.keys():
+        if _TYPE_DICT[if_type].match(interface):
+            return if_type
 
+    return None
+
+
+def _common_options_checker(interface, type, description, mtu):
+    """
+    Validate arguments used by all interface types.
+    """
     ret = { 'result': False, 'error': True }
 
-    if type not in type_dict.keys():
+    if type not in _TYPE_DICT.keys():
         ret.update({'comment': 'Invalid interface type. Please see documentation for supported types.' })
         return ret
 
-    if not type_dict[type].match(interface):
+    if not _TYPE_DICT[type].match(interface):
         ret.update({'comment': 'Interface name incompatable with interface type.' })
         return ret
 
@@ -119,6 +133,9 @@ def _common_options_checker(interface, type, description, mtu):
 
 
 def _tunnel_options_checker(remote, source, ttl, parent, key):
+    """
+    Validate arguments used by the tunnel interface types (i.e. gre and l2gre)
+    """
     ret = { 'result': False, 'error': True }
 
     try:
@@ -153,6 +170,9 @@ def _tunnel_options_checker(remote, source, ttl, parent, key):
 
 
 def _lacp_options_checker(lacp_hash, lacp_members, lacp_min_links, lacp_rate):
+    """
+    Validate arguments used by the lacp (i.e. bond / lag bundle in lacp mode) interface type
+    """
     ret = { 'result': False, 'error': True }
 
     if not lacp_hash or lacp_hash not in ['layer2+3', 'layer3+4']:
@@ -178,7 +198,7 @@ def _vlan_check(vlan):
     """
     Checks the validity of vlan interfaces.
     """
-    if ( re.compile(_VYOS_VLAN).match(vlan) and
+    if ( _TYPE_DICT['vlan'].match(vlan) and
             int(vlan.split('.')[1]) in range(1, 4096) ):
         return True
 
@@ -357,8 +377,7 @@ def update_addr(device, interface, address, ptr=None, roles=None, new_addr=None,
 
     iface['address'].pop(address, None)
     
-    if new_addr:
-        address = new_addr
+    if new_addr: address = new_addr
 
     iface['address'][address] = update
 
@@ -426,17 +445,21 @@ def add(device, interface, description=None, type='eth', mtu=None,
         lacp_hash=None, lacp_members=None, lacp_min_links=None, lacp_rate=None,
         source=None, remote=None, tunnel_parent=None, ttl=None, key=None, test=True):
     """
-    Add a tunnel interface to a device.
+    Add an interface to a device.
 
     :param device: device where interface is to be added
     :param interface: interface to be added
     :param description: an interface description (optional)
-    :param type: tunnel interface type (required, gre or l2gre)
-    :param source: source IP address for encapsulated packets (optional)
-    :param remote: remote (i.e. peer) IP address (required)
-    :param interface: parent interface for tunnel (optional)
-    :param mtu: tunnel mtu (optional)
-    :param ttl: tunnel ttl (default 64)
+    :param type: interface type (required, eth, vlan, lacp, dummy, gre, l2gre)
+    :param mtu: interface mtu (optional)
+    :param lacp_hash: (LACP) hash for lacp; either 'layer2+3' or 'layer3+4'
+    :param lacp_members: (LACP) comma separated list of lacp member ports
+    :param lacp_min_links: (LACP) minimum up ports required by the bundle
+    :param lacp_rate: (LACP) pdu signaling rate; either 'fast' or 'slow'
+    :param source: (tunnels) source IP address for encapsulated packets (optional)
+    :param remote: (tunnels) remote (i.e. peer) IP address (required)
+    :param tunnel_parent: (tunnels) parent interface for tunnel (optional)
+    :param ttl: (tunnels) outer packet ttl (default 64)
     :param test: set true to perform netdb update (defaults to false)
     :return: a dictionary consisting of the following keys:
 
@@ -447,13 +470,10 @@ def add(device, interface, description=None, type='eth', mtu=None,
 
     .. code-block:: bash
 
-        salt-run interface.add_tunnel sin1 tun390 interface='eth1' remote=1.1.1.1 mtu=1450
-        salt-run interface.add_tunnel sin1 tun390 remote=1.1.1.1 mtu=1450 test=false
+        salt-run interface.add sin1 tun390 interface='eth1' remote=1.1.1.1 mtu=1450
+        salt-run interface.add sin1 tun390 remote=1.1.1.1 mtu=1450 test=false
 
     """
-    if not isinstance(test, bool):
-        return {"result": False, "comment": "test only accepts true or false."}
-
     ret = _common_options_checker(interface, type, description, mtu)
     if ret['error']: return ret
 
@@ -519,6 +539,92 @@ def add(device, interface, description=None, type='eth', mtu=None,
 
 
 @_netdb_interface
+def modify(device, interface, description=None, mtu=None,
+        lacp_hash=None, lacp_members=None, lacp_min_links=None, lacp_rate=None,
+        source=None, remote=None, tunnel_parent=None, ttl=None, key=None, test=True, data=None):
+    """
+    Add an interface to a device.
+
+    :param device: device where interface is to be added
+    :param interface: interface to be added
+    :param description: an interface description (optional)
+    :param mtu: interface mtu (optional)
+    :param lacp_hash: (LACP) hash for lacp; either 'layer2+3' or 'layer3+4'
+    :param lacp_members: (LACP) comma separated list of lacp member ports
+    :param lacp_min_links: (LACP) minimum up ports required by the bundle
+    :param lacp_rate: (LACP) pdu signaling rate; either 'fast' or 'slow'
+    :param source: (tunnels) source IP address for encapsulated packets (optional)
+    :param remote: (tunnels) remote (i.e. peer) IP address (required)
+    :param tunnel_parent: (tunnels) parent interface for tunnel (optional)
+    :param ttl: (tunnels) outer packet ttl (default 64)
+    :param test: set true to perform netdb update (defaults to false)
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) true if successful; false otherwise
+       * out: dict containing updated interface and attributes
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run interface.modify sin1 tun390 interface='eth1' remote=1.1.1.1 mtu=1450
+        salt-run interface.modify sin1 tun390 remote=1.1.1.1 mtu=1450 test=false
+
+    """
+    type = _get_interface_type(interface)
+
+    ret = _common_options_checker(interface, type, description, mtu)
+    if ret['error']: return ret
+
+    if type in ['gre', 'l2gre']:
+        ret = _tunnel_options_checker(remote, source, ttl, tunnel_parent, key)
+        if ret['error']: return ret
+
+    elif any([source, remote, tunnel_parent, ttl, key]):
+        return {'result': False, 'comment': 'source, remote, tunnel_parent, ttl, key are for tunnels only' }
+
+    if type == 'lacp':
+        if isinstance(lacp_members, str): lacp_members = lacp_members.split(',')
+        ret = _lacp_options_checker(lacp_hash, lacp_members, lacp_min_links, lacp_rate)
+        if ret['error']: return ret
+
+    elif any([lacp_hash, lacp_members, lacp_min_links, lacp_rate]):
+        return {'result': False, 'comment': 'lacp* arguments can only be used with lacp/lag type' }
+
+    if type == 'eth':
+        type = 'ethernet'
+
+    iface = data[device]['interfaces'][interface]
+
+    if description:
+        iface['description'] = description
+    if mtu:
+        iface['mtu'] = mtu
+
+    if type == 'lacp':
+        iface['lacp'] = {
+                'hash_policy' : lacp_hash,
+                'members'     : lacp_members,
+                'min_links'   : lacp_min_links,
+                'rate'        : lacp_rate,
+                }
+
+    if type == 'tunnel':
+        if source:
+            iface['source'] = source
+        if remote:
+            iface['remote'] = remote
+        if interface:
+            iface['interface'] = interface
+        if ttl:
+            iface['ttl'] = ttl
+
+    data = { device: { 'interfaces': { interface : iface } } }
+
+    return _netdb_update(data, test)
+
+
+@_netdb_interface
 def copy(device, interface, new_dev, new_int, test=True, data=None):
     """
     Copy an interface. New interface will have all the same
@@ -543,24 +649,12 @@ def copy(device, interface, new_dev, new_int, test=True, data=None):
         salt-run interface.copy sin3 tun376 sin1 tun390 test=false
 
     """
-    if_type = None
-    type_dict = {
-            'tun'  :  re.compile(_VYOS_TUN),
-            'eth'  :  re.compile(_VYOS_ETH),
-            'vlan' :  re.compile(_VYOS_VLAN),
-            'lag'  :  re.compile(_VYOS_LAG),
-            'dum'  :  re.compile(_VYOS_DUM),
-            }
-
-    for type in type_dict.keys():
-        if type_dict[type].match(interface):
-            if_type = type
-            break
+    if_type = _get_interface_type(interface)
 
     if not if_type:
         return {'result': False, 'comment': '%s: unsupported interface type.' % interface }
 
-    if not type_dict[if_type].match(new_int):
+    if not _TYPE_DICT[if_type].match(new_int):
         return {'result': False, 'comment': '%s: source and target interface must be the same type.' % new_int }
 
     if if_type == 'vlan' and not _vlan_check(new_int):
