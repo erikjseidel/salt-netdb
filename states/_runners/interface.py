@@ -683,6 +683,68 @@ def copy(device, interface, new_dev, new_int, test=True, data=None):
 
 
 @_netdb_interface
+def set_firewall(device, interface, ipv6_local=None, ipv4_local=None,
+        ipv6_ingress=None, ipv4_ingress=None, ipv6_egress=None, ipv4_egress=None, test=True, data=None):
+    """
+    Set firewall policies for an interface. Defaults to no change.
+    Setting 'disable' will remove an existing policy.
+
+    :param device: device where source interface is located
+    :param interface: source interface to be copied 
+    :param ipv6_local: sets local ipv6 firewall policy
+    :param ipv4_local: sets local ipv4 firewall policy
+    :param ipv6_ingress: sets ingress ipv6 firewall policy
+    :param ipv4_ingress: sets ingress ipv4 firewall policy
+    :param ipv6_egress: sets egress ipv6 firewall policy
+    :param ipv4_egress: sets egress ipv4 firewall policy
+    :param test: set true to perform netdb update (defaults to false)
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) true if successful; false otherwise
+       * out: dict containing updated interface and attributes
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run interface.set_firewall sin3 tun376 ipv4_local=disable ipv6_egress=NEW_POLICY
+        salt-run interface.set_firewall sin3 tun376 ipv4_egress=4TEST ipv6_egress=6TEST
+
+    """
+    rule_dict = {
+            'local'   :  { 'ipv6' : ipv6_local,   'ipv4': ipv4_local   },
+            'ingress' :  { 'ipv6' : ipv6_ingress, 'ipv4': ipv4_ingress },
+            'egress'  :  { 'ipv6' : ipv6_egress,  'ipv4': ipv4_egress  },
+            }
+
+    iface = data[device]['interfaces'][interface]
+
+    if 'firewall' not in iface:
+        iface['firewall'] = {}
+
+    def update_firewall(policy, family, name):
+        if name:
+            if policy not in iface['firewall']: iface['firewall'][policy] = {}
+
+            if name == 'disable':
+                iface['firewall'][policy].pop(family, None)
+            elif isinstance(name, str):
+                iface['firewall'][policy][family] = name
+            elif name:
+                return False, 'Invalid %s %s ruleset name.' % (family, policy)
+
+        return True, None
+
+    for group in ['local', 'ingress', 'egress']:
+        for fam in ['ipv6', 'ipv4']:
+            result, message = update_firewall(group, fam, rule_dict[group][fam])
+            if not result:
+                return { 'result': False, 'comment': message }
+
+    return _netdb_update(data, test)
+
+
+@_netdb_interface
 def delete(device, interface, test=True, data=None):
     """
     Delete an interface.
