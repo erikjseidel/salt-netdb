@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging, json, re
+from functools import wraps
 from ipaddress import ip_interface, IPv4Address
 from copy import deepcopy
 
@@ -53,6 +54,7 @@ def _testable(func):
     """
     Checks if test is type bool.
     """
+    @wraps(func)
     def decorator(*args, test=True, **kwargs):
         if not isinstance(test, bool):
             return {"result": False, "comment": "test only accepts true or false."}
@@ -70,6 +72,7 @@ def _netdb_interface(func):
     message otherwise.
     """
     @_testable
+    @wraps(func)
     def decorator(*args, Test=True, **kwargs):
         args = list(args)
         args[0] = args[0].upper()  # args[0] is the device; args[1] is the interface
@@ -83,6 +86,20 @@ def _netdb_interface(func):
 
         kwargs.update({ 'data': netdb_answer['out'] })
         return func(*args, **kwargs)
+    return decorator
+
+
+def _validator(func):
+    """
+    Wrapper around validator functions to enforce proper interface
+    """
+    def decorator(*args, **kwargs):
+        result, comment = func(*args, **kwargs)
+
+        if result:
+            return { 'result': True, 'error': False }
+
+        return { 'result': False, 'error': True, 'comment': comment }
     return decorator
 
 
@@ -107,102 +124,88 @@ def _get_interface_type(interface):
     return None
 
 
+@_validator
 def _common_options_checker(interface, type, description, mtu):
     """
     Validate arguments used by all interface types.
     """
-    ret = { 'result': False, 'error': True }
-
     if type not in _TYPE_DICT.keys():
-        ret.update({'comment': 'Invalid interface type. Please see documentation for supported types.' })
-        return ret
+        return False, 'Invalid interface type. Please see documentation for supported types.'
 
     if not _TYPE_DICT[type].match(interface):
-        ret.update({'comment': 'Interface name incompatable with interface type.' })
-        return ret
+        return False, 'Interface name incompatable with interface type.'
 
     if description and (not isinstance(description, str) or len(description) > 100):
-        ret.update({'comment': 'Interface description must be a string of 100 characters or less.' })
-        return ret
+        return False, 'Interface description must be a string of 100 characters or less.'
 
     if mtu and mtu not in range(576, 9173):
-        ret.update({'comment': 'Interface MTU must be between 576 and 9172.' })
-        return ret
+        return False, 'Interface MTU must be between 576 and 9172.'
 
-    return { 'result': True, 'error': False }
+    return True, None
 
 
+@_validator
 def _tunnel_options_checker(remote, source, ttl, parent, key):
     """
     Validate arguments used by the tunnel interface types (i.e. gre and l2gre)
     """
-    ret = { 'result': False, 'error': True }
-
     try:
         ip_interface(remote)
     except:
-        ret.update({ 'comment': 'Invalid tunnel remote IP address' })
-        return ret
+        return False, 'Invalid tunnel remote IP address'
 
     try:
         if source:
             ip_interface(source)
     except:
-        ret.update({ 'comment': 'Invalid tunnel source IP address' })
-        return ret
+        return False, 'Invalid tunnel source IP address'
 
     if ttl and int(ttl) not in range(1, 256):
-        ret.update({ 'comment': 'ttl must be between 1 and 255' })
-        return ret
+        return False, 'ttl must be between 1 and 255'
 
     if parent and not re.compile(_VYOS_PARENT).match(parent):
-        ret.update({ 'comment': 'Invalid parent interface name' })
-        return ret
+        return False, 'Invalid parent interface name'
 
     try:
         if key:
             IPv4Address(key)
     except:
-        ret.update({ 'comment': 'Invalid tunnel key value' })
-        return ret
+        return False, 'Invalid tunnel key value'
 
-    return { 'result': True, 'error': False }
+    return True, None
 
 
+@_validator
 def _lacp_options_checker(lacp_hash, lacp_members, lacp_min_links, lacp_rate):
     """
     Validate arguments used by the lacp (i.e. bond / lag bundle in lacp mode) interface type
     """
-    ret = { 'result': False, 'error': True }
 
     if not lacp_hash or lacp_hash not in ['layer2+3', 'layer3+4']:
-        ret.update({ 'comment': 'Invalid LACP hash. Must be "layer2+3" or "layer3+4"' })
-        return ret
+        return False, 'Invalid LACP hash. Must be "layer2+3" or "layer3+4"'
 
     if not isinstance(lacp_members, list) or len(lacp_members) not in range(1, 6):
-        ret.update({ 'comment': 'LACP interface must have between 1 and 5 member ports' })
-        return ret
+        return False, 'LACP interface must have between 1 and 5 member ports'
 
     if not lacp_min_links or int(lacp_min_links) < 1:
-        ret.update({ 'comment': 'LACP interface min links cannot be less than one' })
-        return ret
+        return False, 'LACP interface min links cannot be less than one'
 
     if not lacp_rate or lacp_rate not in ['fast', 'slow']:
-        ret.update({ 'comment': 'LACP rate must be either "fast" or "slow"' })
-        return ret
+        return False, 'LACP rate must be either "fast" or "slow"'
 
-    return { 'result': True, 'error': False }
+    return True, None
 
 
+@_validator
 def _vlan_check(vlan):
     """
     Checks the validity of vlan interfaces.
     """
     if ( _TYPE_DICT['vlan'].match(vlan) and
             int(vlan.split('.')[1]) in range(1, 4096) ):
-        return True
+        return False, '%s: vlan id must be between 1 and 4095.' % interface
 
-    return False
+    return True, None
 
 
 def get(device=None, interface=None):
@@ -492,8 +495,9 @@ def add(device, interface, description=None, type='eth', mtu=None,
     elif any([lacp_hash, lacp_members, lacp_min_links, lacp_rate]):
         return {'result': False, 'comment': 'lacp* arguments can only be used with lacp/lag type' }
 
-    if type == 'vlan' and not _vlan_check(interface):
-        return {'result': False, 'comment': '%s: vlan id must be between 1 and 4095.' % interface }
+    if type == 'vlan':
+        ret = _vlan_check(interface)
+        if ret['error']: return ret
 
     if type == 'eth':
         type = 'ethernet'
@@ -523,7 +527,7 @@ def add(device, interface, description=None, type='eth', mtu=None,
                 'rate'        : lacp_rate,
                 }
 
-    if type == 'tunnel':
+    if type in ['gre', 'l2gre']:
         if source:
             new['source'] = source
         if remote:
@@ -657,8 +661,9 @@ def copy(device, interface, new_dev, new_int, test=True, data=None):
     if not _TYPE_DICT[if_type].match(new_int):
         return {'result': False, 'comment': '%s: source and target interface must be the same type.' % new_int }
 
-    if if_type == 'vlan' and not _vlan_check(new_int):
-        return {'result': False, 'comment': '%s: vlan id must be between 1 and 4095.' % new_int }
+    if if_type == 'vlan':
+        ret = _vlan_check(new_int)
+        if ret['error']: return ret
 
     new_dev = new_dev.upper()
     if _interface_check(new_dev, new_int):
