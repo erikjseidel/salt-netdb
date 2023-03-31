@@ -22,10 +22,12 @@ def _get_netdb_config():
     }
 
 
-def request(column, device=None, data=None, method="GET"):
+def request(column, device=None, data=None, test=False, method="GET"):
     netdb = _get_netdb_config()
 
-    if device:
+    if test:
+        url = netdb['url'] + column + '/validate'
+    elif device:
         url = netdb['url'] + column + '/' + device
     else:
         url = netdb['url'] + column
@@ -53,15 +55,14 @@ def request(column, device=None, data=None, method="GET"):
 
 
 def _alter(column, data, method='GET', test=True):
-    if not test:
-        netdb_answer = request(column, data = data, method=method)
-        if netdb_answer['result']:
-            netdb_answer.update({'out': data})
-            return netdb_answer
-        else:
-            return netdb_answer
+    netdb_answer = request(column, data = data, test=test,  method=method)
+    if netdb_answer['result']:
+        netdb_answer.update({'out': data})
+        return netdb_answer
+    else:
+        return netdb_answer
 
-    return { 'result': False, 'comment': 'Test run. Database not updated.', 'out': data }
+ #   return { 'result': False, 'comment': 'Test run. Database not updated.', 'out': data }
 
 
 def get(column, device=None, data=None):
