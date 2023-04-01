@@ -56,13 +56,15 @@ def request(column, device=None, data=None, test=False, method="GET"):
 
 def _alter(column, data, method='GET', test=True):
     netdb_answer = request(column, data = data, test=test,  method=method)
+
+    # no configuration to be validated for delete method.
+    if method == 'DELETE' and test:
+        return { 'result': False, 'comment': 'Test run. Database not updated.', 'out': data }
+
     if netdb_answer['result']:
         netdb_answer.update({'out': data})
-        return netdb_answer
-    else:
-        return netdb_answer
 
- #   return { 'result': False, 'comment': 'Test run. Database not updated.', 'out': data }
+    return netdb_answer
 
 
 def get(column, device=None, data=None):

@@ -35,6 +35,10 @@ def _netdb_pull():
     return { 'result': True, 'out': tunnels }
 
 
+def _enable_interface(interface, disable=False, test=True):
+    return __salt__['netdb.enable_interface'](_COLUMN, interface, disable=disable, test=test)
+
+
 def _ip2long(ip):
     """
     Convert an IP string to long
@@ -130,12 +134,13 @@ def generate():
     return ret
 
 
-def enable(tunnel, test=False, debug=False, force=False):
+def enable(tunnel, test=False, permanent=False, debug=False, force=False):
     """
     Enable a salt managed tunnel. The router and tunnel must exist in netdb.
 
     :param tunnel: The name of the tunnel to be enabled
     :param test: True for dry-run. False to apply on the router.
+    :param permanent: True to update netdb in addition to router and local REDIS
     :param debug: True to show additional debugging information
     :param force: Force a commit to the router for a tunnel not marked as disabled in REDIS
     :return: a dictionary consisting of the following keys:
@@ -190,15 +195,24 @@ def enable(tunnel, test=False, debug=False, force=False):
             if not force and not test:
                 _remove_disable_mark(tunnel, tunnels)
 
+            if permanent:
+                result = _enable_interface(tunnel, disable=False, test=test)
+                ret['comment']     += ' Permanent (netdb) disable requested.'
+                ret['netdb'] = { 
+                        'result'  : result['result'],
+                        'comment' : result['comment'],
+                        }
+
     return ret
 
 
-def disable(tunnel, test=False, debug=False, force=False):
+def disable(tunnel, test=False, permanent=False, debug=False, force=False):
     """
     Disable a salt managed tunnel. The router and tunnel must exist in netdb.
 
     :param tunnel: The name of the tunnel to be disabled
     :param test: True for dry-run. False to apply on the router.
+    :param permanent: True to update netdb in addition to router and local REDIS
     :param debug: True to show additional debugging information
     :param force: Force a commit to the router for a tunnel marked as disabled in REDIS
     :return: a dictionary consisting of the following keys:
@@ -215,7 +229,6 @@ def disable(tunnel, test=False, debug=False, force=False):
         salt sin1-proxy tunnel.disable tun261 force=False
 
     """
-
     name = 'disable_tunnel'
     ret = {"result": False, "comment": "Tunnel does not exist on selected router."}
 
@@ -252,6 +265,14 @@ def disable(tunnel, test=False, debug=False, force=False):
             # force means it didn't have the mark anyway.
             if not force and not test:
                 _mark_disabled_tunnel(tunnel, tunnels)
+
+            if permanent:
+                result = _enable_interface(tunnel, disable=True, test=test)
+                ret['comment']     += ' Permanent (netdb) disable requested.'
+                ret['netdb'] = { 
+                        'result'  : result['result'],
+                        'comment' : result['comment'],
+                        }
 
     return ret
 
