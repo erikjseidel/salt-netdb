@@ -34,6 +34,9 @@ def _netdb_pull():
 
     return { 'result': True, 'out': ethernet }
 
+def _enable_interface(interface, disable=False, test=True):
+    return __salt__['netdb.enable_interface'](_COLUMN, interface, disable=disable, test=test)
+
 
 def _is_marked_disabled(interface):
     """
@@ -99,10 +102,12 @@ def generate():
     disabled_ifaces = _get_disabled_interfaces()['out']
 
     for interface, settings in ifaces.items():
-        if interface in disabled_ifaces:
-            settings['disabled'] = True
-        else:
-            settings['disabled'] = False
+        # netdb overrides redis if setting present there.
+        if 'disabled' not in settings:
+            if interface in disabled_ifaces:
+                settings['disabled'] = True
+            else:
+                settings['disabled'] = False
 
         if settings['type'] == 'ethernet':
             settings['vyos_type'] = 'ethernet'
@@ -124,13 +129,14 @@ def generate():
     return ret
 
 
-def enable(interface, test=False, debug=False, force=False):
+def enable(interface, test=False, permanent=False, debug=False, force=False):
     """
     Enable a salt managed ethernet, vlan or bundle interface. The interface must exist in 
     netdb.
 
     :param interface: The name of the interface to be enabled
     :param test: True for dry-run. False to apply on the router.
+    :param permanent: True to update netdb in addition to router and local REDIS
     :param debug: True to show additional debugging information
     :param force: Force a commit to the router for a tunnel not marked as disabled in REDIS
     :return: a dictionary consisting of the following keys:
@@ -207,15 +213,24 @@ def enable(interface, test=False, debug=False, force=False):
             if not force and not test:
                 _remove_disable_mark(interface)
 
+            if permanent:
+                result = _enable_interface(interface, disable=False, test=test)
+                ret['comment']     += ' Permanent (netdb) disable requested.'
+                ret['netdb'] = { 
+                        'result'  : result['result'],
+                        'comment' : result['comment'],
+                        }
+
     return ret
 
 
-def disable(interface, test=False, debug=False, force=False):
+def disable(interface, test=False, permanent=False, debug=False, force=False):
     """
     Disable a salt managed interface. The interface must exist in netdb.
 
     :param interface: The name of the tunnel to be disabled
     :param test: True for dry-run. False to apply on the router.
+    :param permanent: True to update netdb in addition to router and local REDIS
     :param debug: True to show additional debugging information
     :param force: Force a commit to the router for a tunnel marked as disabled in REDIS
     :return: a dictionary consisting of the following keys:
@@ -291,6 +306,14 @@ def disable(interface, test=False, debug=False, force=False):
             # force means it didn't have the mark anyway.
             if not force and not test:
                 _mark_disabled_interface(interface)
+
+            if permanent:
+                result = _enable_interface(interface, disable=True, test=test)
+                ret['comment']     += ' Permanent (netdb) disable requested.'
+                ret['netdb'] = { 
+                        'result'  : result['result'],
+                        'comment' : result['comment'],
+                        }
 
     return ret
 
