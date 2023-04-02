@@ -11,7 +11,9 @@ except ( ImportError, ModuleNotFoundError):
 
 __virtualname__ = 'net_redis'
 
-_NET_REDIS_HOST = 'localhost'
+# For docker
+_NET_REDIS_HOST = '172.17.0.1'
+#_NET_REDIS_HOST = '172.17.0.1'
 _NET_REDIS_PORT = 6379
 _NET_REDIS_DB   = '0'
 

@@ -82,21 +82,22 @@ def report(device = None, out = True, comment = True):
                     if 'meta' in addr_data:
                         report_data[cidr[0]]['meta'] = deepcopy(addr_data['meta'])
 
-        if out:
-            ret.update({'out': report_data, 'result': True})
+    if out:
+        ret.update({'out': report_data, 'result': True})
 
-        if comment:
-            iplist = list(report_data.keys())
+    if comment:
+            
+        iplist = list(report_data.keys())
 
-            for ip in iplist:
-                description = ""
-                if 'description' in report_data[ip]:
-                    description = report_data[ip]['description']
+        for ip in iplist:
+            description = ""
+            if 'description' in report_data[ip]:
+                description = report_data[ip]['description']
 
-                report_text += "{0:30} {1:10} {2:10} {3:40}\n".format(ip + '/' + report_data[ip]['cidr'], device,
-                        report_data[ip]['interface'], description)
+            report_text += "{0:30} {1:10} {2:10} {3:40}\n".format(ip + '/' + report_data[ip]['cidr'], report_data[ip]['device'],
+                    report_data[ip]['interface'], description)
 
-            ret.update({'comment': report_text})
+        ret.update({'comment': report_text})
 
     ret.update({'result': True})
 

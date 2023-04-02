@@ -11,9 +11,12 @@ def __virtual__():
     return __virtualname__
 
 def netdb_grains():
-    pillar = __pillar__['netdb']
+    if 'netdb' in __pillar__:
+        pillar = __pillar__['netdb']
 
-    grains = __utils__['netdb.get_grains'](pillar)
-    grains['id'] = pillar['id']
+        grains = __utils__['netdb.get_grains'](pillar)
+        grains['id'] = pillar['id']
 
-    return grains
+        return grains
+
+    return {}
