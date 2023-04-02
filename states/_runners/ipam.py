@@ -12,7 +12,7 @@ log = logging.getLogger(__file__)
 _COLUMN = 'interface'
 
 _WARNING = """This utility returns only ip space that is managed by salt-netdb. In order for
-it to return accurate free space, the entiret of the queried prefix must be
+it to return accurate free space, the entirety of the queried prefix must be
 managed by salt-netdb. 
 """
 
