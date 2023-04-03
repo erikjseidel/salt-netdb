@@ -28,14 +28,14 @@ your cirumstances and automate them accordingly.
 
 1. Clone the repository into a location on your host:
 
-```
-# chgrp netdb      # A shared group of your choice. Make sure to add your user to this group.
-# chmod g+w /srv
-$ cd /srv
-$ git clone https://github.com/erikjseidel/salt-netdb.git
-$ ls
-netdb  salt-netdb
-```
+    ```
+    # chgrp netdb      # A shared group of your choice. Make sure to add your user to this group.
+    # chmod g+w /srv
+    $ cd /srv
+    $ git clone https://github.com/erikjseidel/salt-netdb.git
+    $ ls
+    netdb  salt-netdb
+    ```
 
 2. The containers are designed to run statelessly so certain directories and files on the host must first
 be prepared and populated in order to maintain state:
@@ -67,23 +67,23 @@ be prepared and populated in order to maintain state:
     # chmod g+w /var/scratch
     ```
 
-On proxy minion host(s):
+    On proxy minion host(s):
 
-```
-# mkdir -p /etc/salt/proxy.d
-# echo "master: 192.0.2.3" > /etc/salt/proxy.d/proxy.conf  # The IP address of the master host
-```
+    ```
+    # mkdir -p /etc/salt/proxy.d
+    # echo "master: 192.0.2.3" > /etc/salt/proxy.d/proxy.conf  # The IP address of the master host
+    ```
 
-On both master and proxy minion host(s):
+    On both master and proxy minion host(s):
 
-```
-# mkdir /etc/salt_keys
-# cp 01-salt.full.pem /etc/salt_keys   # The client auth key generated during netdb setup
-````
+    ```
+    # mkdir /etc/salt_keys
+    # cp 01-salt.full.pem /etc/salt_keys   # The client auth key generated during netdb setup
+    ```
 
-There should be one salt master and one minion each for salt managed devices. The master and
-minions can be on different hosts (indeed this is recommended in the case of more than 5 managed
-devices or so or where devices are far away from the master host).
+    There should be one salt master and one minion each for salt managed devices. The master and
+    minions can be on different hosts (indeed this is recommended in the case of more than 5 managed
+    devices or so or where devices are far away from the master host).
 
 3. Make sure that redis-server is installed on each host that has minion containers. In the case
 that you are not using host networking mode for the containers (as is the case in this example),
