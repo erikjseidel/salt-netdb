@@ -157,48 +157,52 @@ make sure to add a rule allowing all incoming from the docker container net (e.g
     EOF
     ```
 
+<<<<<<< HEAD
 Make sure that the volume declarations in this step align with the configuration created in
 step 2.
+=======
+    Make sure that the volume declarations in this step align with the configuration created in
+    step 2.
+>>>>>>> 6812639 (revert)
 
 6. Enable and start the salt master:
-```
-$ sudo systemctl enable salt-master.service
-$ sudo systemctl start salt-master.service
-$ systemctl status salt-master.service
-$ systemctl status salt-master.service
-● salt-master.service - salt netdb master containerized service
-     Loaded: loaded (/lib/systemd/system/salt-master.service; enabled; vendor preset: enabled)
-     Active: active (running) since Mon 2023-04-03 07:26:33 UTC; 3h 54min ago
-   Main PID: 194109 (docker)
-      Tasks: 6 (limit: 1129)
-     Memory: 6.3M
-        CPU: 437ms
-     CGroup: /system.slice/salt-master.service
-             └─194109 /usr/bin/docker run --name master --hostname netops2 --volume /srv/salt-netdb>
-$ sudo docker ps
-erik@netops3:~$ sudo docker ps
-CONTAINER ID   IMAGE                                     COMMAND                  CREATED        STATUS        NAMES
-c49756887c3a   erikjseidel/salt-napalm                   "/usr/bin/dumb-init …"   Seconds ago    Seconds ago   master
-701b01b40c79   mongodb/mongodb-community-server:latest   "python3 /usr/local/…"   42 hours ago   Up 42 hours   netdb
-$
-$ sudo docker exec -it master salt-run saltutil.sync_all
-```
+    ```
+    $ sudo systemctl enable salt-master.service
+    $ sudo systemctl start salt-master.service
+    $ systemctl status salt-master.service
+    $ systemctl status salt-master.service
+    ● salt-master.service - salt netdb master containerized service
+         Loaded: loaded (/lib/systemd/system/salt-master.service; enabled; vendor preset: enabled)
+         Active: active (running) since Mon 2023-04-03 07:26:33 UTC; 3h 54min ago
+       Main PID: 194109 (docker)
+          Tasks: 6 (limit: 1129)
+         Memory: 6.3M
+            CPU: 437ms
+         CGroup: /system.slice/salt-master.service
+                 └─194109 /usr/bin/docker run --name master --hostname netops2 --volume /srv/salt-netdb>
+    $ sudo docker ps
+    CONTAINER ID   IMAGE                                     COMMAND                  CREATED        STATUS        NAMES
+    c49756887c3a   erikjseidel/salt-napalm                   "/usr/bin/dumb-init …"   Seconds ago    Seconds ago   master
+    701b01b40c79   mongodb/mongodb-community-server:latest   "python3 /usr/local/…"   42 hours ago   Up 42 hours   netdb
+    $
+    $ sudo docker exec -it master salt-run saltutil.sync_all
+    ```
 
 7. Define your first minion:
-```
-$ cat /srv/salt-netdb/pillars/proxies/sin2.sls <EOF
-proxy:
-  proxytype: napalm
-  driver: vyos 
-  device_type: vyos
-  host: 192.168.34.8      # Example IP
-  username: my_username
-  password: my_password
-  multiprocessing: False  # important. keep this
+    ```
+    $ cat /srv/salt-netdb/pillars/proxies/sin2.sls <EOF
+    proxy:
+      proxytype: napalm
+      driver: vyos 
+      device_type: vyos
+      host: 192.168.34.8      # Example IP
+      username: my_username
+      password: my_password
+      multiprocessing: False  # important. keep this
 
-netdb:
-  id: SIN2                # As defined in netdb initial device load.
-EOF
+    netdb:
+      id: SIN2                # As defined in netdb initial device load.
+    EOF
 $ cat /srv/salt-netdb/pillars/top.sls <EOF
 base:
   sin2:
