@@ -37,7 +37,8 @@ $ ls
 netdb  salt-netdb
 ```
 
-2. The containers are designed to run statelessly so certain directories and files on the host must first
+#### 2. Create configuration to be used by master and minion containers
+The containers are designed to run statelessly so certain directories and files on the host must first
 be prepared and populated in order to maintain state:
 
 On the master host:
@@ -86,16 +87,21 @@ There should be one salt master and one minion each for salt managed devices. Th
 minions can be on different hosts (indeed this is recommended in the case of more than 5 managed
 devices or so or where devices are far away from the master host).
 
-3. Make sure that redis-server is installed on each host that has minion containers. In the case
-that you are not using host networking mode for the containers (as is the case in this example),
-make sure that redis-server is bound to the host docker IP e.g. 172.17.0.1 in addition to the
-loopback IP.
+#### 3. Make sure that redis-server is installed on each host that has minion containers. 
 
-4. Also make sure that the firewall rules on your master are set to allow connections to ports from
+In the case that you are not using host networking mode for the containers (as is the case in this 
+example), make sure that redis-server is bound to the host docker IP e.g. 172.17.0.1 in addition to
+the loopback IP.
+
+#### 4. Configure firewall to allow minion access to master and redis
+
+Also make sure that the firewall rules on your master are set to allow connections to ports from
 4505 and 4506 from all minion hosts. Finally, in the case you are not using host networking mode
 make sure to add a rule allowing all incoming from the docker container net (e.g. 172.17.0.0/16).
 
-5. We will use systemd to manage of containers. Install systemd launchers as per the examples below:
+#### 5. Configure systemd to manage master and minion containers
+
+We will use systemd to manage of containers. Install systemd launchers as per the examples below:
 
 For the salt master container:
 ```
@@ -161,7 +167,8 @@ EOF
 Make sure that the volume declarations in this step align with the configuration created in
 step 2.
 
-6. Enable and start the salt master:
+#### 6. Enable and start the salt master
+
 ```
 $ sudo systemctl enable salt-master.service
 $ sudo systemctl start salt-master.service
@@ -185,7 +192,8 @@ $
 $ sudo docker exec -it master salt-run saltutil.sync_all
 ```
 
-7. Define your first minion:
+#### 7. Define your first minion
+
 ```
 $ cat /srv/salt-netdb/pillars/proxies/sin2.sls <EOF
 proxy:
@@ -206,7 +214,8 @@ base:
     - proxies/sin2
 ```
 
-8. Enable and start your first minion and accept its key on the master:
+#### 8. Enable and start your first minion and accept its key on the master
+
 ```
 minion-host$ sudo systemctl enable salt-cproxy@sin2.service 
 minion-host$ sudo systemctl start salt-cproxy@sin2.service 
@@ -229,7 +238,9 @@ master-host$ sudo docker exec -it master salt-key -a sin2
 
 ```
 
-9. Give a minute or so to settle and try running some commands on the master:
+#### 9. Test the minion
+
+Give a minute or so to settle and try running some commands on the master:
 ```
 $ sudo docker exec -it master salt sin2 test.ping
 sin2:
