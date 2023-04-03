@@ -21,12 +21,12 @@ https://docs.docker.com/engine/install/debian/
 
 and that netdb has been installed per the README instructions found at the netdb repository.
 
-# Example installation steps (on Debian 11 bullseye)
+## Example installation steps (on Debian 11 bullseye)
 
 These steps are as an example in order clarify the process. It is recommended that you modify them to fit
 your cirumstances and automate them accordingly.
 
-1. Clone the repository into a location on your host:
+### 1. Clone the repository into a location on your host:
 
 ```
 # chgrp netdb      # A shared group of your choice. Make sure to add your user to this group.
