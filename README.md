@@ -96,20 +96,20 @@ make sure to add a rule allowing all incoming from the docker container net (e.g
 
 5. We will use systemd to manage of containers. Install systemd launchers as per the examples below:
 
-For the salt master container:
-```
-# cat /lib/systemd/system/salt-master.service <EOF
-[Unit]
-Description=salt netdb master containerized service
-Wants=docker.service
-After=docker.service
+    For the salt master container:
+    ```
+    # cat /lib/systemd/system/salt-master.service <EOF
+    [Unit]
+    Description=salt netdb master containerized service
+    Wants=docker.service
+    After=docker.service
 
-[Service]
-User=root
-TimeoutStartSec=0
-ExecStartPre=-/usr/bin/docker kill master
-ExecStartPre=-/usr/bin/docker rm master
-ExecStart=/usr/bin/docker run \
+    [Service]
+    User=root
+    TimeoutStartSec=0
+    ExecStartPre=-/usr/bin/docker kill master
+    ExecStartPre=-/usr/bin/docker rm master
+    ExecStart=/usr/bin/docker run \
 	--name master \
 	--hostname netops2 \
 	--volume "/srv/salt-netdb:/srv/salt-netdb:rw" \
@@ -120,16 +120,16 @@ ExecStart=/usr/bin/docker run \
 	--volume "/var/scratch:/var/scratch:rw" \
 	-p 4505-4506:4505-4506 -p 8000:8000 \
 	erikjseidel/salt-napalm
-Restart=always
-RestartSec=5s
+    Restart=always
+    RestartSec=5s
 
-[Install]
-WantedBy=multi-user.target
-EOF
-```
+    [Install]
+    WantedBy=multi-user.target
+    EOF
+    ```
 
 For the salt minion containers:
-```
+    ```
 $ cat /lib/systemd/system/salt-cproxy@.service <EOF
 [Unit]
 Description=dockerized salt-proxy service for %i
@@ -155,7 +155,7 @@ RestartSec=5s
 [Install]
 WantedBy=multi-user.target
 EOF
-```
+    ```
 
 Make sure that the volume declarations in this step align with the configuration created in
 step 2.
