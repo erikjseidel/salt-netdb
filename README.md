@@ -190,6 +190,45 @@ c49756887c3a   erikjseidel/salt-napalm                   "/usr/bin/dumb-init …
 701b01b40c79   mongodb/mongodb-community-server:latest   "python3 /usr/local/…"   42 hours ago   Up 42 hours   netdb
 $
 $ sudo docker exec -it master salt-run saltutil.sync_all
+cache:
+clouds:
+engines:
+executors:
+fileserver:
+grains:
+    - grains.netdb_grains
+modules:
+    - modules.bgp
+    - modules.ethernet
+    - modules.firewall
+    - modules.isis
+    - modules.loopback
+    - modules.net_redis
+    - modules.netconfig
+    - modules.netdb
+    - modules.policy
+    - modules.tunnel
+output:
+pillar:
+    - pillar.netdb
+proxymodules:
+queues:
+renderers:
+returners:
+runners:
+    - runners.interface
+    - runners.ipam
+    - runners.loader
+sdb:
+serializers:
+states:
+thorium:
+tokens:
+tops:
+utils:
+    - utils.netdb
+    - utils.netdb_runner
+wheel:
 ```
 
 #### 7. Define your first minion
@@ -234,7 +273,19 @@ minion-host$ sudo docker ps
 CONTAINER ID   IMAGE                                     COMMAND                  CREATED        STATUS        NAMES
 4c9609e2443a   erikjseidel/salt-napalm                   "/usr/bin/dumb-init …"   Seconds ago    Seconds ago   sin2
 
+master-host$ sudo docker exec -it master salt-key
+Accepted Keys:
+sin1
+Denied Keys:
+Unaccepted Keys:
+sin2
+Rejected Keys:
 master-host$ sudo docker exec -it master salt-key -a sin2
+The following keys are going to be accepted:
+Unaccepted Keys:
+sin2
+Proceed? [n/Y] y
+Key for minion sin2 accepted
 
 ```
 
