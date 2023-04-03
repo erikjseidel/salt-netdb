@@ -110,16 +110,16 @@ make sure to add a rule allowing all incoming from the docker container net (e.g
     ExecStartPre=-/usr/bin/docker kill master
     ExecStartPre=-/usr/bin/docker rm master
     ExecStart=/usr/bin/docker run \
-	--name master \
-	--hostname netops2 \
-	--volume "/srv/salt-netdb:/srv/salt-netdb:rw" \
-	--volume "/etc/salt/master.d/master.conf:/etc/salt/master.d/master.conf:ro" \
-	--volume "/etc/salt/master.d/_netdb.conf:/etc/salt/master.d/_netdb.conf:ro" \
-	--volume "/etc/salt_keys:/etc/salt_keys:ro" \
-	--volume "/etc/salt/pki.master:/etc/salt/pki:rw" \
-	--volume "/var/scratch:/var/scratch:rw" \
-	-p 4505-4506:4505-4506 -p 8000:8000 \
-	erikjseidel/salt-napalm
+    	--name master \
+    	--hostname netops2 \
+    	--volume "/srv/salt-netdb:/srv/salt-netdb:rw" \
+    	--volume "/etc/salt/master.d/master.conf:/etc/salt/master.d/master.conf:ro" \
+    	--volume "/etc/salt/master.d/_netdb.conf:/etc/salt/master.d/_netdb.conf:ro" \
+    	--volume "/etc/salt_keys:/etc/salt_keys:ro" \
+    	--volume "/etc/salt/pki.master:/etc/salt/pki:rw" \
+    	--volume "/var/scratch:/var/scratch:rw" \
+    	-p 4505-4506:4505-4506 -p 8000:8000 \
+    	erikjseidel/salt-napalm
     Restart=always
     RestartSec=5s
 
@@ -128,33 +128,33 @@ make sure to add a rule allowing all incoming from the docker container net (e.g
     EOF
     ```
 
-For the salt minion containers:
+    For the salt minion containers:
     ```
-$ cat /lib/systemd/system/salt-cproxy@.service <EOF
-[Unit]
-Description=dockerized salt-proxy service for %i
-Wants=docker.service
-After=docker.service
+    $ cat /lib/systemd/system/salt-cproxy@.service <EOF
+    [Unit]
+    Description=dockerized salt-proxy service for %i
+    Wants=docker.service
+    After=docker.service
+    
+    [Service]
+    User=root
+    TimeoutStartSec=0
+    ExecStartPre=-/usr/bin/docker kill %i
+    ExecStartPre=-/usr/bin/docker rm %i
+    ExecStart=/usr/bin/docker run \
+    	--name %i \
+    	--hostname netops2 \
+    	--volume "/etc/salt/proxy.d/proxy.conf:/etc/salt/proxy.d/proxy.conf:ro" \
+    	--volume "/etc/salt/pki.%i:/etc/salt/pki:rw" \
+    	--volume "/etc/salt_keys:/etc/salt_keys" \
+    	-e SALT_PROXY_ID=%i \
+    	erikjseidel/salt-napalm
+    Restart=always
+    RestartSec=5s
 
-[Service]
-User=root
-TimeoutStartSec=0
-ExecStartPre=-/usr/bin/docker kill %i
-ExecStartPre=-/usr/bin/docker rm %i
-ExecStart=/usr/bin/docker run \
-	--name %i \
-	--hostname netops2 \
-	--volume "/etc/salt/proxy.d/proxy.conf:/etc/salt/proxy.d/proxy.conf:ro" \
-	--volume "/etc/salt/pki.%i:/etc/salt/pki:rw" \
-	--volume "/etc/salt_keys:/etc/salt_keys" \
-	-e SALT_PROXY_ID=%i \
-	erikjseidel/salt-napalm
-Restart=always
-RestartSec=5s
-
-[Install]
-WantedBy=multi-user.target
-EOF
+    [Install]
+    WantedBy=multi-user.target
+    EOF
     ```
 
 Make sure that the volume declarations in this step align with the configuration created in
