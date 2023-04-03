@@ -21,7 +21,7 @@ https://docs.docker.com/engine/install/debian/
 
 and that netdb has been installed per the README instructions found at the netdb repository.
 
-# Example installation steps (on Debian 11 bullseye)
+## Example installation steps (on Debian 11 bullseye)
 
 These steps are as an example in order clarify the process. It is recommended that you modify them to fit
 your cirumstances and automate them accordingly.
@@ -40,33 +40,32 @@ netdb  salt-netdb
 2. The containers are designed to run statelessly so certain directories and files on the host must first
 be prepared and populated in order to maintain state:
 
-On the master host:
-```
-$ mkdir -p /etc/salt/master.d
-$ cat /etc/salt/master.d/master.conf <<EOF
-enable_ssh_minions: True
-timeout: 120
+    On the master host:
+    ```
+    $ mkdir -p /etc/salt/master.d
+    $ cat /etc/salt/master.d/master.conf <<EOF
+    timeout: 120
 
-file_roots:
-  base:
-    - /srv/salt-netdb/states
+    file_roots:
+      base:
+        - /srv/salt-netdb/states
 
-pillar_roots:
-  base:
-    - /srv/salt-netdb/pillars
+    pillar_roots:
+      base:
+        - /srv/salt-netdb/pillars
 
-ext_pillar:
-  - netdb: noarg
-EOF
-# cat /etc/salt/master.d/_netdb.conf <<EOF
-netdb:
-  url: "https://192.0.2.5:8572/api/"       # IP address and port selected during netdb setup
-  key: "/etc/salt_keys/01-salt.full.pem"   # Client auth key generated during netdb setup
-EOF
-# mkdir /var/scratch   # scratch directory shared by host and master container (optional)
-# chgrp netdb /var/scratch
-# chmod g+w /var/scratch
-```
+    ext_pillar:
+      - netdb: noarg
+    EOF
+    # cat /etc/salt/master.d/_netdb.conf <<EOF
+    netdb:
+      url: "https://192.0.2.5:8572/api/"       # IP address and port selected during netdb setup
+      key: "/etc/salt_keys/01-salt.full.pem"   # Client auth key generated during netdb setup
+    EOF
+    # mkdir /var/scratch   # scratch directory shared by host and master container (optional)
+    # chgrp netdb /var/scratch
+    # chmod g+w /var/scratch
+    ```
 
 On proxy minion host(s):
 
