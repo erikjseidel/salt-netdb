@@ -7,9 +7,9 @@ from copy      import deepcopy
 
 __virtualname__ = "ipam"
 
-log = logging.getLogger(__file__)
+_UTIL_NAME = 'ipam'
 
-_COLUMN = 'interface'
+log = logging.getLogger(__file__)
 
 _WARNING = """This utility returns only ip space that is managed by salt-netdb. In order for
 it to return accurate free space, the entirety of the queried prefix must be
@@ -20,8 +20,17 @@ def __virtual__():
     return __virtualname__
 
 
-def _netdb_get(data = None):
-    return __utils__['netdb_runner.get'](_COLUMN, data = data)
+def _call_netdb_util(function, data, out=True, comment=True):
+    endpoint = _UTIL_NAME + '/' + function
+
+    ret = __utils__['netdb_runner.call_netdb_util'](endpoint, data = data)
+
+    if not out:
+        ret.pop('out', None)
+    if not comment:
+        ret.pop('comment', None)
+
+    return ret
 
 
 def report(device = None, out = True, comment = True):
@@ -50,58 +59,12 @@ def report(device = None, out = True, comment = True):
     if not isinstance(out, bool) or not isinstance(comment, bool):
         return {"result": False, "comment": "comment and out only accept true or false."}
 
-    filt = [ device.upper() if device else None, None, None, None ]
+    if device:
+        filt = { "device": device }
+    else:
+        filt = None
 
-    netdb_answer = _netdb_get(filt)
-
-    if not netdb_answer['result']:
-        return netdb_answer
-
-    data = netdb_answer['out']
-
-    report_data = {}
-    ret = {}
-
-    report_text = "Salt managed addresses:\n----------\n"
-
-    for device, interfaces in data.items():
-        for iface, iface_data in interfaces['interfaces'].items():
-            if 'address' in iface_data:
-                for addr, addr_data in iface_data['address'].items():
- 
-                    cidr = addr.split('/')
- 
-                    report_data[cidr[0]] = {}
-                    report_data[cidr[0]]['cidr'] = cidr[1]
-                    report_data[cidr[0]]['device'] = device
-                    report_data[cidr[0]]['interface'] = iface
-
-                    if 'description' in iface_data:
-                        report_data[cidr[0]]['description'] = iface_data['description']
-
-                    if 'meta' in addr_data:
-                        report_data[cidr[0]]['meta'] = deepcopy(addr_data['meta'])
-
-    if out:
-        ret.update({'out': report_data, 'result': True})
-
-    if comment:
-            
-        iplist = list(report_data.keys())
-
-        for ip in iplist:
-            description = ""
-            if 'description' in report_data[ip]:
-                description = report_data[ip]['description']
-
-            report_text += "{0:30} {1:10} {2:10} {3:40}\n".format(ip + '/' + report_data[ip]['cidr'], report_data[ip]['device'],
-                    report_data[ip]['interface'], description)
-
-        ret.update({'comment': report_text})
-
-    ret.update({'result': True})
-
-    return ret
+    return _call_netdb_util('report', filt, out, comment)
 
 
 def chooser(prefix, out=True, comment=True):
@@ -129,54 +92,10 @@ def chooser(prefix, out=True, comment=True):
     if not isinstance(out, bool) or not isinstance(comment, bool):
         return {"result": False, "comment": "comment and out only accept true or false."}
 
-    try:
-        network = ip_network(prefix)
-    except:
-        return { 'result': False, 'error': True, 'comment': 'Invalid prefix' }
+    data = { "prefix": prefix }
 
-    netdb_answer = _netdb_get()
+    ret = _call_netdb_util('chooser', data, out, comment)
 
-    if not netdb_answer['result'] or not netdb_answer['out']:
-        return netdb_answer
-
-    data = netdb_answer['out']
-
-    prefix_list  = []
-    avail_addr = []
-
-    for device, interfaces in data.items():
-        for iface, iface_data in interfaces['interfaces'].items():
-            if 'address' in iface_data:
-                addresses = iface_data['address'].keys()
-                for addr in addresses:
-                    net = ip_interface(addr).network
-                    try:
-                        if net.subnet_of(network) and str(net) not in prefix_list:
-                            prefix_list.append(str(net))
-                    except:
-                        continue
-
-    available = IPSet( [str(network)] ) ^ IPSet(prefix_list)
-
-    comment_text = "Available prefixes:\n-----\n"
-    out_dict = {}
-    for cidr in available.iter_cidrs():
-        prefix = str(cidr)
-        start  = str(cidr[0])
-        end    = str(cidr[-1])
-
-        out_dict[prefix] = {
-                'start':  start,
-                'end':    end,
-                }
-
-        comment_text += '%s [%s - %s]\n' % ( prefix, start, end )
-
-    ret = { 'result': True, 'note': _WARNING }
-
-    if out:
-        ret.update({ 'out': out_dict })
-    if comment:
-        ret.update({ 'comment': comment_text })
+    ret.update({'notice': _WARNING})
 
     return ret

@@ -2,6 +2,11 @@
 import salt.utils.http
 import json
 
+_HEADERS = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        }
+
 def __virtual__():
     netdb_config = __opts__["netdb"] if "netdb" in __opts__ else None
 
@@ -17,8 +22,9 @@ def __virtual__():
 
 def _get_netdb_config():
     return {
-        "url": __opts__["netdb"]["url"],
-        "key": __opts__["netdb"]["key"],
+        "url":      __opts__["netdb"]["url"],
+        "util_url": __opts__["netdb"]["util_url"],
+        "key":      __opts__["netdb"]["key"],
     }
 
 
@@ -81,3 +87,25 @@ def update(column, data, test=True):
 
 def delete(column, data, test=True):
     return _alter(column, data=data, method='DELETE', test=test)
+
+
+def call_netdb_util(endpoint, data=None, method='GET'):
+    netdb = _get_netdb_config()
+
+    url = netdb['util_url'] + endpoint
+
+    if data:
+        resp = salt.utils.http.query(
+            url=url, method=method, header_dict=_HEADERS, verify_ssl=False, data=json.dumps(data),
+            cert = [ netdb['key'], netdb['key'] ]
+        )
+    else:
+        resp = salt.utils.http.query(
+            url=url, method=method, header_dict=_HEADERS, verify_ssl=False,
+            cert = [ netdb['key'], netdb['key'] ]
+        )
+
+    if 'body' in resp:
+        return json.loads(resp['body'])
+    else:
+        return { 'result': False, 'error': True, 'comment': 'netdb util api error: ' +  resp['error'] }
