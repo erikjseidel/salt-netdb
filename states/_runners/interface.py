@@ -77,7 +77,7 @@ def _netdb_interface(func):
         args = list(args)
         args[0] = args[0].upper()  # args[0] is the device; args[1] is the interface
 
-        filt = [ args[0], None, None, args[1] ]
+        filt = { 'set_id': args[0], 'element_id': args[1] }
         netdb_answer = _netdb_get(filt)
 
         if not netdb_answer['result']:
@@ -107,7 +107,7 @@ def _interface_check(device, interface):
     """
     Returns True if the device / interface pair exists; False otherwise
     """
-    filt = [ device, None, None, interface ]
+    filt = { "set_id": device, "element_id": interface }
     if _netdb_get(filt)['result']:
         return True
 
@@ -203,9 +203,9 @@ def _vlan_check(vlan):
     """
     if ( _TYPE_DICT['vlan'].match(vlan) and
             int(vlan.split('.')[1]) in range(1, 4096) ):
-        return False, '%s: vlan id must be between 1 and 4095.' % interface
+        return True, None
 
-    return True, None
+    return False, '%s: vlan id must be between 1 and 4095.' % vlan
 
 
 def get(device=None, interface=None):
@@ -229,7 +229,7 @@ def get(device=None, interface=None):
     """
     if device:
         device = device.upper()
-    filt = [ device, None, None, interface ]
+    filt = { "set_id": device, "element_id": interface }
     netdb_answer = _netdb_get(filt)
 
     return netdb_answer
@@ -765,7 +765,7 @@ def delete(device, interface, test=True, data=None):
         salt-run interface.delete device=sin3 interface=tun376
 
     """
-    filt = [ device, None, None, interface ]
+    filt = { "set_id": device, "element_id": interface }
 
     ret = _netdb_delete(filt, test)
     ret.update({ 'out': data })
