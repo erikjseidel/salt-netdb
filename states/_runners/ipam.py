@@ -129,7 +129,7 @@ def update_cfdns(test=True):
 
     .. code-block:: bash
 
-        salt-run ipam.chooser prefix='23.181.64.0/24'
+        salt-run ipam.update_cfdns test=False
 
     """
 
