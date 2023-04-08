@@ -7,7 +7,8 @@ from copy      import deepcopy
 
 __virtualname__ = "ipam"
 
-_UTIL_NAME = 'ipam'
+_IPAM_UTIL_NAME  = 'ipam'
+_CFDNS_UTIL_NAME = 'cfdns'
 
 log = logging.getLogger(__file__)
 
@@ -20,8 +21,8 @@ def __virtual__():
     return __virtualname__
 
 
-def _call_netdb_util(function, data, out=True, comment=True):
-    endpoint = _UTIL_NAME + '/' + function
+def _call_ipam_util(function, data, out=True, comment=True):
+    endpoint = _IPAM_UTIL_NAME + '/' + function
 
     ret = __utils__['netdb_runner.call_netdb_util'](endpoint, data = data)
 
@@ -31,6 +32,12 @@ def _call_netdb_util(function, data, out=True, comment=True):
         ret.pop('comment', None)
 
     return ret
+
+
+def _call_cfdns_util(function, method='GET'):
+    endpoint = _CFDNS_UTIL_NAME + '/' + function
+
+    return __utils__['netdb_runner.call_netdb_util'](endpoint, method=method)
 
 
 def report(device = None, out = True, comment = True):
@@ -64,7 +71,7 @@ def report(device = None, out = True, comment = True):
     else:
         filt = None
 
-    return _call_netdb_util('report', filt, out, comment)
+    return _call_ipam_util('report', filt, out, comment)
 
 
 def chooser(prefix, out=True, comment=True):
@@ -94,8 +101,21 @@ def chooser(prefix, out=True, comment=True):
 
     data = { "prefix": prefix }
 
-    ret = _call_netdb_util('chooser', data, out, comment)
+    ret = _call_ipam_util('chooser', data, out, comment)
 
     ret.update({'notice': _WARNING})
 
     return ret
+
+
+def update_cfdns(test=True):
+
+    if not isinstance(test, bool):
+        return {"result": False, "comment": "test only accepts true or false."}
+
+    if test:
+        method = 'GET'
+    else:
+        method = 'POST'
+
+    return _call_cfdns_util('update_cf', method=method)
