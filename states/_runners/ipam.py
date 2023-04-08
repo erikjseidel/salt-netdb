@@ -109,6 +109,29 @@ def chooser(prefix, out=True, comment=True):
 
 
 def update_cfdns(test=True):
+    """
+    Request update for netdb-util managed Cloudflare PTR zones.
+
+    :param test: Perform the update if false, only list update actions if true.
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if update / list IPs successful; false otherwise
+       * out: a list of netdb managed PTRs in CF zones, relevent attributes and
+              action required.
+
+    ptr['action'] values are:
+       * create: PTR does not exist in CF zone. Record will be created
+       * update: PTR exists but does not match netdb record; will be updated
+       * delete: PTR in CF zone does not exist in netdb; will be deleted
+       * pass:   CF and netdb records align. No action required.
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run ipam.chooser prefix='23.181.64.0/24'
+
+    """
 
     if not isinstance(test, bool):
         return {"result": False, "comment": "test only accepts true or false."}
