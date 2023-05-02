@@ -28,7 +28,7 @@ def _netdb_pull():
 
     tunnels = {}
 
-    for iface, iface_data in interfaces[router]['interfaces'].items():
+    for iface, iface_data in interfaces[router].items():
         if iface.startswith('tun'):
             tunnels[iface] = iface_data
 

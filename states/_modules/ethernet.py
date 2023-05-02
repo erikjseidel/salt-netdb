@@ -28,7 +28,7 @@ def _netdb_pull():
 
     ethernet = {}
 
-    for iface, iface_data in interfaces[router]['interfaces'].items():
+    for iface, iface_data in interfaces[router].items():
         if iface.startswith('eth') or iface.startswith('bond'):
             ethernet[iface] = iface_data
 

@@ -24,7 +24,7 @@ def _netdb_pull():
 
     loopbacks = {}
 
-    for iface, iface_data in interfaces[router]['interfaces'].items():
+    for iface, iface_data in interfaces[router].items():
         if iface.startswith('dum'):
             loopbacks[iface] = iface_data
 
