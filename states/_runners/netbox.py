@@ -96,7 +96,7 @@ def synchronize_interfaces(devices, test=True):
     """
     Load interfaces generated from Netbox source into netdb for a device.
 
-    :param device: The device whose interfaces are to be generated.
+    :param devices: Comma separated list of devices be updated.
     :param test: Synchonize interfaces if false, only do a dry run if true.
     :return: a dictionary consisting of the following keys:
 
