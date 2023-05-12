@@ -15,10 +15,10 @@ def __virtual__():
     return __virtualname__
 
 
-def _call_netbox_util(function, data=None, method='GET'):
+def _call_netbox_util(function, data=None, test=True):
     endpoint = _NETBOX_UTIL_NAME + '/' + function
 
-    return __utils__['netdb_runner.call_netdb_util'](endpoint, data=data, method=method)
+    return __utils__['netdb_runner.call_netdb_util'](endpoint, data=data, test=test)
 
 
 def generate_devices():
@@ -84,12 +84,7 @@ def synchronize_devices(test=True):
     if not isinstance(test, bool):
         return {"result": False, "comment": "test only accepts true or false."}
 
-    if test:
-        method = 'GET'
-    else:
-        method = 'POST'
-
-    return _call_netbox_util('synchronize_devices', method=method)
+    return _call_netbox_util('synchronize_devices', test=test)
 
 
 def synchronize_interfaces(devices, test=True):
@@ -117,9 +112,4 @@ def synchronize_interfaces(devices, test=True):
 
     data = { "devices": devs }
 
-    if test:
-        method = 'GET'
-    else:
-        method = 'POST'
-
-    return _call_netbox_util('synchronize_interfaces', data, method=method)
+    return _call_netbox_util('synchronize_interfaces', data, test=test)
