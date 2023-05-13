@@ -64,6 +64,25 @@ def generate_interfaces(device):
     return ret
 
 
+def generate_isis():
+    """
+    Show IS-IS config generated from Netbox source in netdb format.
+
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if data returned; false otherwise
+       * out: a dict of devices in netdb format
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run netbox.generate_devices
+
+    """
+    return _call_netbox_util('generate_igp')
+
+
 def synchronize_devices(test=True):
     """
     Load devices generated from Netbox source into netdb.
@@ -113,3 +132,27 @@ def synchronize_interfaces(devices, test=True):
     data = { "devices": devs }
 
     return _call_netbox_util('synchronize_interfaces', data, test=test)
+
+
+def synchronize_isis(test=True):
+    """
+    Load IS-IS config generated from Netbox source into netdb.
+
+    :param test: Synchonize all devices if false, only do a dry run if true.
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if successful; false otherwise
+       * out: a dict of synchronization results
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run netbox.synchronize_isis
+        salt-run netbox.synchronize_isis test=false
+
+    """
+    if not isinstance(test, bool):
+        return {"result": False, "comment": "test only accepts true or false."}
+
+    return _call_netbox_util('synchronize_igp', test=test)
