@@ -19,6 +19,11 @@ set interfaces ethernet {{ interface }} offload tso
 
 {%-             endif %}
 {%-         endif %}
+{%-         if iface_data['mac_address'] is defined %}
+
+set interfaces ethernet {{ interface }} hw-id {{ iface_data['mac_address'] }}
+
+{%-         endif %}
 {%-     endif %}
 
 {%-     if iface_data['type'] == 'lacp' %}
@@ -155,3 +160,4 @@ comment interfaces {{ iface_data['vlan']['parent_vyos_type'] }} {{ iface_data['v
 
 {%- endfor %}
 
+comment interfaces 'The following interface nodes are fully SALT MANAGED: bond, tunnel, dummy'
