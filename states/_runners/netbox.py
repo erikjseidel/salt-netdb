@@ -77,10 +77,29 @@ def generate_isis():
 
     .. code-block:: bash
 
-        salt-run netbox.generate_devices
+        salt-run netbox.generate_isis
 
     """
     return _call_netbox_util('generate_igp')
+
+
+def generate_ebgp():
+    """
+    Show internal eBGP config generated from Netbox source in netdb format.
+
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if data returned; false otherwise
+       * out: a dict of devices in netdb format
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run netbox.generate_ebgp
+
+    """
+    return _call_netbox_util('generate_ebgp')
 
 
 def synchronize_devices(test=True):
@@ -156,3 +175,27 @@ def synchronize_isis(test=True):
         return {"result": False, "comment": "test only accepts true or false."}
 
     return _call_netbox_util('synchronize_igp', test=test)
+
+
+def synchronize_ebgp(test=True):
+    """
+    Load internal eBGP config generated from Netbox source into netdb.
+
+    :param test: Synchonize all devices if false, only do a dry run if true.
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if successful; false otherwise
+       * out: a dict of synchronization results
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run netbox.synchronize_ebgp
+        salt-run netbox.synchronize_ebgp test=false
+
+    """
+    if not isinstance(test, bool):
+        return {"result": False, "comment": "test only accepts true or false."}
+
+    return _call_netbox_util('synchronize_ebgp', test=test)
