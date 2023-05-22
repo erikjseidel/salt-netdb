@@ -199,3 +199,52 @@ def synchronize_ebgp(test=True):
         return {"result": False, "comment": "test only accepts true or false."}
 
     return _call_netbox_util('synchronize_ebgp', test=test)
+
+
+def update_ptrs(test=True):
+    """
+    Trigger the Netbox update_ptrs (Regularize PTR Fields) script.
+
+    :param test: Commit changes to Netbox if false, only do a dry run if true.
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if successful; false otherwise
+       * out: a dict of synchronization results
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run netbox.update_ptrs
+        salt-run netbox.update_ptrs test=false
+
+    """
+    if not isinstance(test, bool):
+        return {"result": False, "comment": "test only accepts true or false."}
+
+    return _call_netbox_util('update_ptrs', test=test)
+
+
+def update_iface_descriptions(test=True):
+    """
+    Trigger the Netbox update_iface_descriptions (Regularize Interface Descriptions) 
+    script.
+
+    :param test: Commit changes to Netbox if false, only do a dry run if true.
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if successful; false otherwise
+       * out: a dict of synchronization results
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run netbox.update_iface_descriptions
+        salt-run netbox.update_iface_descriptions test=false
+
+    """
+    if not isinstance(test, bool):
+        return {"result": False, "comment": "test only accepts true or false."}
+
+    return _call_netbox_util('update_iface_descriptions', test=test)
