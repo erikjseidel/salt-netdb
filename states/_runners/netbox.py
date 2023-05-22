@@ -15,10 +15,10 @@ def __virtual__():
     return __virtualname__
 
 
-def _call_netbox_util(function, data=None, test=True):
+def _call_netbox_util(function, data=None, params=None, test=True):
     endpoint = _NETBOX_UTIL_NAME + '/' + function
 
-    return __utils__['netdb_runner.call_netdb_util'](endpoint, data=data, test=test)
+    return __utils__['netdb_runner.call_netdb_util'](endpoint, data=data, params=params, test=test)
 
 
 def generate_devices():
@@ -248,3 +248,57 @@ def update_iface_descriptions(test=True):
         return {"result": False, "comment": "test only accepts true or false."}
 
     return _call_netbox_util('update_iface_descriptions', test=test)
+
+
+def renumber(ipv4, ipv6, test=True):
+    """
+    Trigger the Netbox renumber (Regenerate IPs renumber phase) script. Creates
+    new IPs on targeted interfaces, marks old IPs for pruning.
+
+    :param test: Commit changes to Netbox if false, only do a dry run if true.
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if successful; false otherwise
+       * out: a dict of synchronization results
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run netbox.renumber ipv4='23.181.24.0/24' ipv6='2620:136:a009:df99::/64'
+
+    """
+    if not isinstance(test, bool):
+        return {"result": False, "comment": "test only accepts true or false."}
+
+    params = {
+            'ipv4': ipv4,
+            'ipv6': ipv6,
+            }
+
+    return _call_netbox_util('renumber', params=params, test=test)
+
+
+def prune_ips(test=True):
+    """
+    Trigger the Netbox prune_ips (Regenerate IPs cleanup) script. Cleans up old
+    IPs, regularizes new IP tags after IP generation process done.
+
+    :param test: Commit changes to Netbox if false, only do a dry run if true.
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if successful; false otherwise
+       * out: a dict of synchronization results
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run netbox.prune_ips
+        salt-run netbox.prune_ips test=false
+
+    """
+    if not isinstance(test, bool):
+        return {"result": False, "comment": "test only accepts true or false."}
+
+    return _call_netbox_util('prune_ips', test=test)

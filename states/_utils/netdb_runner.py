@@ -89,12 +89,16 @@ def delete(column, data, test=True):
     return _alter(column, data=data, method='DELETE', test=test)
 
 
-def call_netdb_util(endpoint, data=None, method='GET', test=True):
+def call_netdb_util(endpoint, data=None, params=None, method='GET', test=True):
     netdb = _get_netdb_config()
 
-    url = netdb['util_url'] + endpoint
+    url = netdb['util_url'] + endpoint + '?'
     if not test:
-        url += '?test=false'
+        url += 'test=false&'
+
+    if params:
+        for k, v in params.items():
+            url += f'{k}={v}&' 
 
     if data:
         resp = salt.utils.http.query(
