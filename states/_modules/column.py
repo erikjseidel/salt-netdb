@@ -48,6 +48,33 @@ def _get(column, delimiter=':'):
     return unwind
 
 
+def pull(column):
+    """
+    Retrieves a column from netdb for the device. None is returned in case of
+    error or no result. Intended for use by salt state apply pipeline.
+
+    .. code-block:: bash
+
+        salt sin1 column.pull interface
+
+    """
+
+    netdb_answer = _netdb_pull(column)
+
+    if netdb_answer.get('error') or not netdb_answer.get('out'):
+        return { 
+                'comment' : netdb_answer.get('comment'),
+                'result'  : False,
+                'error'   : True,
+               }
+
+    return {
+            'comment' : netdb_answer.get('comment'),
+            'out'     : netdb_answer['out'].get(__grains__['id']),
+            'result'  : True,
+            }
+
+
 def ls():
     """
     Calls netdb for a list of available columns and returns this list.

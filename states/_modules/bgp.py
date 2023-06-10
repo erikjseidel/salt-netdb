@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import logging
 
 __virtualname__ = "bgp"
@@ -14,21 +12,12 @@ def __virtual__():
     return __virtualname__
 
 
-def _netdb_pull():
-    netdb_answer =  __salt__['netdb.get_column'](_COLUMN)
-
-    if not netdb_answer['result'] or 'out' not in netdb_answer:
-        netdb_answer.update({ 'error': True })
-
-    return netdb_answer
-
-
 def _get_peers():
     """
     Returns salt managed BGP peers on router plus the address families configured for each peer
     """
-    bgp = _netdb_pull()
-    if not bgp['result']:
+    bgp = __salt__['column.pull'](_COLUMN).get('out')
+    if not bgp:
         return bgp
 
     peer_groups = {}
@@ -36,27 +25,25 @@ def _get_peers():
 
     """ Load peer group data, needed to provide list of families for each neighbor
     """
-    for config_group, data in bgp['out'].items():
-        if 'peer_groups' in data.keys():
-            for peer_group, peer_group_data in data['peer_groups'].items():
-                peer_groups[peer_group] = peer_group_data
+    if 'peer_groups' in bgp.keys():
+        for peer_group, peer_group_data in bgp['peer_groups'].items():
+             peer_groups[peer_group] = peer_group_data
 
-    for config_group, data in bgp['out'].items():
-        if 'neighbors' in data.keys():
-            for neighbor, neighbor_data in data['neighbors'].items():
-                neighbors[neighbor] = neighbor_data
+    if 'neighbors' in bgp.keys():
+        for neighbor, neighbor_data in bgp['neighbors'].items():
+            neighbors[neighbor] = neighbor_data
 
-                """ provide a list of families; used by disable / enable functions
-                    do determine where to add REJECT-ALL policies
-                """
-                if 'peer_group' in neighbor_data.keys():
-                    pg = neighbor_data['peer_group']
-                    neighbors[neighbor]['families'] = list(peer_groups[pg]['family'].keys())
+            """ provide a list of families; used by disable / enable functions
+                do determine where to add REJECT-ALL policies
+            """
+            if 'peer_group' in neighbor_data.keys():
+                pg = neighbor_data['peer_group']
+                neighbors[neighbor]['families'] = list(peer_groups[pg]['family'].keys())
 
-                #  salt managed neighbors should always be members of a peer group
-                #  as such we should never reach this point
-                else:
-                    neighbors[neighbor]['families'] = []
+            #  salt managed neighbors should always be members of a peer group
+            #  as such we should never reach this point
+            else:
+                neighbors[neighbor]['families'] = []
 
     ret = { 'result': True, 'out': neighbors }
 
@@ -77,7 +64,7 @@ def _remove_disable_mark(peer):
     """
     Removes a BGP peer is in the disabled list. Wrapper around generic net_redis entry functions.
     """
-    bgp_peers = _get_peers()['out']
+    bgp_peers = _get_peers().get('out')
 
     if not peer:
         return {"result": False, "comment": "No BGP peer selected."}
@@ -92,7 +79,7 @@ def _mark_disabled_peer(peer):
     """
     Adds a BGP peer to the disabled list. Wrapper around generic net_redis entry functions.
     """
-    bgp_peers = _get_peers()['out']
+    bgp_peers = _get_peers().get('out')
 
     if not peer:
         return {"result": False, "comment": "No BGP peer selected."}
@@ -124,11 +111,10 @@ def generate():
 
     .. code-block:: bash
 
-        salt sin1-proxy bgp.generate
+        salt sin1 bgp.generate
 
     """
-
-    return _netdb_pull()
+    return  __salt__['column.pull'](_COLUMN)
 
 
 def enable(peer, test=False, debug=False, force=False):
@@ -149,13 +135,13 @@ def enable(peer, test=False, debug=False, force=False):
 
     .. code-block:: bash
 
-        salt sin1-proxy bgp.enable 23.181.64.4
-        salt sin1-proxy bgp.enable 23.181.64.4 test=True
-        salt sin1-proxy bgp.enable 23.181.64.4 force=True
+        salt sin1 bgp.enable 23.181.64.4
+        salt sin1 bgp.enable 23.181.64.4 test=True
+        salt sin1 bgp.enable 23.181.64.4 force=True
 
     """
 
-    peers = _get_peers()['out']
+    peers = _get_peers().get('out')
 
     name = 'bgp_enable'
 
@@ -172,7 +158,7 @@ def enable(peer, test=False, debug=False, force=False):
     else:
         ret = _is_marked_disabled(peer)
 
-        if not ret['out'] and not force:
+        if not ret.get('out') and not force:
             ret = {
                 "result": False,
                 "comment": "BGP peer not marked as disabled in REDIS. Use force=true to commit anyway."
@@ -212,13 +198,12 @@ def disable(peer, test=False, debug=False, force=False):
 
     .. code-block:: bash
 
-        salt sin1-proxy bgp.disable 23.181.64.4
-        salt sin1-proxy bgp.disable 23.181.64.4 test=True
-        salt sin1-proxy bgp.disable 23.181.64.4 force=True
+        salt sin1 bgp.disable 23.181.64.4
+        salt sin1 bgp.disable 23.181.64.4 test=True
+        salt sin1 bgp.disable 23.181.64.4 force=True
 
     """
-
-    peers = _get_peers()['out']
+    peers = _get_peers().get('out')
 
     name = 'bgp_disable'
 
@@ -237,7 +222,7 @@ def disable(peer, test=False, debug=False, force=False):
 
         families = peers[peer]['families']
 
-        if ret['out'] and not force:
+        if ret.get('out') and not force:
             ret = {
                 "result": False,
                 "comment": "BGP peer already marked as disabled in REDIS. Use force=true to commit anyway."
@@ -280,7 +265,7 @@ def summary(family='both'):
 
     """
 
-    peers = _get_peers()['out']
+    peers = _get_peers().get('out')
 
     name = 'bgp_summary'
 
