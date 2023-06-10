@@ -3,15 +3,6 @@ from .netdb import get_column, list_columns
 
 logger = logging.getLogger(__file__)
 
-def _netdb_pull(column):
-    netdb_answer = get_column(column)
-
-    if not netdb_answer['result'] or 'out' not in netdb_answer:
-        netdb_answer.update({ 'error': True })
-
-    return netdb_answer
-
-
 def list():
     netdb_answer = list_columns()
 
@@ -22,14 +13,18 @@ def list():
 
 
 def get(column, delimiter=':'):
+    """
+    Retrieves a column from netdb for the device. Used by column module
+    'get', 'items' and 'keys' functions.
+    """
     c = column.split(delimiter)
 
-    netdb_answer = _netdb_pull(c.pop(0))
-
-    if netdb_answer.get('error'):
+    netdb_answer = get_column(c.pop(0))
+    if not netdb_answer['result'] or 'out' not in netdb_answer:
         return { 
                 'comment' : netdb_answer.get('comment'),
                 'result'  : False,
+                'error'   : True,
                }
 
     unwind = netdb_answer['out'].get(__grains__['id'])
@@ -49,9 +44,9 @@ def pull(column):
     error or no result. Intended for use by salt state apply pipeline.
     """
 
-    netdb_answer = _netdb_pull(column)
+    netdb_answer = get_column(column)
 
-    if netdb_answer.get('error') or not netdb_answer.get('out'):
+    if not netdb_answer['result'] or 'out' not in netdb_answer:
         return { 
                 'comment' : netdb_answer.get('comment'),
                 'result'  : False,
