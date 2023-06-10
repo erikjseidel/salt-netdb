@@ -28,4 +28,4 @@ def generate():
 
     """
 
-    return __salt__['column.pull'](_COLUMN)
+    return __utils__['column.pull'](_COLUMN)

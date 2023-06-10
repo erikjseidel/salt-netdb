@@ -1,11 +1,8 @@
-# -*- coding: utf-8 -*-
-
 import logging
-import copy
 
 __virtualname__ = "isis"
 
-log = logging.getLogger(__file__)
+logger = logging.getLogger(__file__)
 
 _COLUMN = 'igp'
 
@@ -16,23 +13,16 @@ def __virtual__():
     return __virtualname__
 
 
-def _netdb_pull():
-    router = __grains__['id']
-    netdb_answer =  __salt__['netdb.get_column'](_COLUMN)
+def _get_config():
+    column = __utils__['column.pull'](_COLUMN).get('out')
+    if not column:
+        return { 'result': False, 'comment': 'no IGP config found for this router' }
 
-    if not netdb_answer['result'] or 'out' not in netdb_answer:
-        return netdb_answer
-    
-    data = netdb_answer['out']
+    isis = column.get('isis')
+    if not isis:
+        return { 'result': False, 'comment': 'no IGP config found for this router' }
 
-    if not data:
-        return { 'result': False, 'comment': 'no ISIS config found for this router' }
-
-    igp = {}
-    for category, contents in data.items():
-        igp.update(contents['isis'])
-
-    return { 'result': True, 'out': igp }
+    return { 'result': True, 'out': isis }
 
 
 def _is_marked_disabled(interface):
@@ -85,16 +75,14 @@ def generate():
 
     .. code-block:: bash
 
-        salt sin1-proxy isis.generate
+        salt sin2 isis.generate
 
     """
+    config = _get_config()
+    if not config.get('result'):
+        return config
 
-    ret_isis = _netdb_pull()
-    if not ret_isis['result']:
-        ret_isis.update({ 'error': True })
-        return ret_isis
-
-    isis = ret_isis['out']
+    isis = config.get('out')
 
     new_ints = []
 
@@ -104,9 +92,12 @@ def generate():
 
     isis['interfaces'] = new_ints
 
-    ret_isis.update({ 'out': isis })
+    config.update({ 
+        'out'     : isis, 
+        'comment' : 'IS-IS configuration generated for ' + __grains__['id'] 
+        })
 
-    return ret_isis
+    return config
 
 
 def enable_interface(interface, test=False, debug=False, force=False):
@@ -126,12 +117,11 @@ def enable_interface(interface, test=False, debug=False, force=False):
 
     .. code-block:: bash
 
-        salt sin1-proxy isis.enable_interface tun261 
-        salt sin1-proxy isis.enable_interface tun261 test=True
-        salt sin1-proxy isis.enable_interface tun261 force=False
+        salt sin2 isis.enable_interface tun261 
+        salt sin2 isis.enable_interface tun261 test=True
+        salt sin2 isis.enable_interface tun261 force=False
 
     """
-
     name = 'isis_enable_interface'
 
     ret = {}
@@ -142,11 +132,11 @@ def enable_interface(interface, test=False, debug=False, force=False):
     if not interface:
         return {"result": False, "comment": "No interface selected."}
 
-    ret_isis = _netdb_pull()
-    if not ret_isis['result']:
-        return ret_isis
+    igp = _get_config()
+    if not igp.get('result'):
+        return igp
 
-    isis = ret_isis['out']
+    isis = igp['out']
 
     iface = next((item for item in isis['interfaces'] if item['name'] == interface), None)
 
@@ -196,12 +186,11 @@ def disable_interface(interface, test=False, debug=False, force=False):
 
     .. code-block:: bash
 
-        salt sin1-proxy isis.disable_interface tun261 
-        salt sin1-proxy isis.disable_interface tun261 test=True
-        salt sin1-proxy isis.disable_interface tun261 force=False
+        salt sin2 isis.disable_interface tun261 
+        salt sin2 isis.disable_interface tun261 test=True
+        salt sin2 isis.disable_interface tun261 force=False
 
     """
-
     name = 'isis_disable_interface'
 
     ret = {}
@@ -212,11 +201,11 @@ def disable_interface(interface, test=False, debug=False, force=False):
     if not interface:
         return {"result": False, "comment": "No interface selected."}
 
-    ret_isis = _netdb_pull()
-    if not ret_isis['result']:
-        return ret_isis
+    igp = _get_config()
+    if not igp.get('result'):
+        return igp
 
-    isis = ret_isis['out']
+    isis = igp['out']
 
     iface = next((item for item in isis['interfaces'] if item['name'] == interface), None)
 
@@ -266,9 +255,9 @@ def overload(enable, test=False, debug=False):
 
     .. code-block:: bash
 
-        salt sin1-proxy isis.overload enable=True
-        salt sin1-proxy isis.overload enable=False test=True
-        salt sin1-proxy isis.overload True debug=True
+        salt sin2 isis.overload enable=True
+        salt sin2 isis.overload enable=False test=True
+        salt sin2 isis.overload True debug=True
 
     """
 
@@ -308,26 +297,20 @@ def adj():
 
     .. code-block:: bash
 
-        salt sin1-proxy isis.adj
+        salt sin2 isis.adj
 
     """
 
-    ret_isis = _netdb_pull()
+    config = _get_config()
 
-    ret = {"result": False, "comment": "unsupported operating system."}
+    ret = __salt__['net.cli']("show isis neighbor")
 
-    if ( __grains__['os'] == "vyos" ):
-        ret.update(
-            __salt__['net.cli'](
-                "show isis neighbor",
-            )
-        )
+    disabled_interfaces = _get_disabled_ifaces().get('out')
 
-    disabled_interfaces = _get_disabled_ifaces()['out']
-
-    if ret_isis['result']:
+    isis = config.get('out')
+    if isis:
         iface_list = []
-        for iface in ret_isis['out']['interfaces']:
+        for iface in isis['interfaces']:
             data = iface['name']
             if 'passive' in iface.keys() and iface['passive']:
                 data += "\t[passive]"
@@ -337,7 +320,7 @@ def adj():
 
         ret['comment'] = "salt managed IS-IS interfaces:\n--- \n" + '\n'.join( iface_list )
     else:
-        if 'error' in ret_isis and ret_isis['error']:
+        if config.get('error'):
             ret['comment'] = "netdb API down"
         else:
             ret['comment'] = "salt / netdb managed ISIS not present on this router"
@@ -358,20 +341,10 @@ def sum():
 
     .. code-block:: bash
 
-        salt sin1-proxy isis.sum
+        salt sin2 isis.sum
 
     """
-
-    ret = {"result": False, "comment": "unsupported operating system."}
-
-    if ( __grains__['os'] == "vyos" ):
-        ret.update(
-            __salt__['net.cli'](
-                "show isis summary",
-            )
-        )
-
-    return ret
+    return __salt__['net.cli']("show isis summary")
 
 
 def interface():
@@ -389,28 +362,20 @@ def interface():
 
     .. code-block:: bash
 
-        salt sin1-proxy isis.interface
+        salt sin2 isis.interface
 
     """
 
-    ret_isis = _netdb_pull()
+    config = _get_config()
 
-    ret = {"result": False, "comment": "unsupported operating system."}
+    ret = __salt__['net.cli']("show isis interface")
 
-    if ( __grains__['os'] == "vyos" ):
-        ret.update(
-            __salt__['net.cli'](
-                "show isis interface",
-            )
-        )
-    else:
-        return ret
+    disabled_interfaces = _get_disabled_ifaces().get('out')
 
-    disabled_interfaces = _get_disabled_ifaces()['out']
-
-    if ret_isis['result']:
+    isis = config.get('out')
+    if isis:
         iface_list = []
-        for iface in ret_isis['out']['interfaces']:
+        for iface in isis['interfaces']:
             data = iface['name']
             if 'passive' in iface.keys() and iface['passive']:
                 data += "\t[passive]"
@@ -420,7 +385,7 @@ def interface():
 
         ret['comment'] = "salt managed IS-IS interfaces:\n--- \n" + '\n'.join( iface_list  )
     else:
-        if 'error' in ret_isis and ret_isis['error']:
+        if config.get('error'):
             ret['comment'] = "netdb API down"
         else:
             ret['comment'] = "salt / netdb managed ISIS not present on this router"

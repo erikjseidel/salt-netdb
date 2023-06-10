@@ -16,7 +16,7 @@ def __virtual__():
 
 
 def _get_ethernet():
-    interfaces =  __salt__['column.pull'](_COLUMN).get('out')
+    interfaces =  __utils__['column.pull'](_COLUMN).get('out')
     if not interfaces:
         return { 'result' : False }
 

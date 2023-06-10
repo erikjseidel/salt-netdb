@@ -8,73 +8,6 @@ def __virtual__():
     return __virtualname__
 
 
-def _netdb_pull(column):
-    netdb_answer = __salt__['netdb.get_column'](column)
-
-    if not netdb_answer['result'] or 'out' not in netdb_answer:
-        netdb_answer.update({ 'error': True })
-
-    return netdb_answer
-
-
-def _netdb_columns():
-    netdb_answer = __salt__['netdb.list_columns']()
-
-    if not netdb_answer['result'] or 'out' not in netdb_answer:
-        netdb_answer.update({ 'error': True })
-
-    return netdb_answer
-
-
-def _get(column, delimiter=':'):
-    c = column.split(delimiter)
-
-    netdb_answer = _netdb_pull(c.pop(0))
-
-    if netdb_answer.get('error'):
-        return { 
-                'comment' : netdb_answer.get('comment'),
-                'result'  : False,
-               }
-
-    unwind = netdb_answer['out'].get(__grains__['id'])
-    for i in range(0, len(c)):
-        unwind = unwind.get(c[i])
-        if not isinstance(unwind, dict):
-            if i < len(c) - 1:
-                return None
-            break
-
-    return unwind
-
-
-def pull(column):
-    """
-    Retrieves a column from netdb for the device. None is returned in case of
-    error or no result. Intended for use by salt state apply pipeline.
-
-    .. code-block:: bash
-
-        salt sin1 column.pull interface
-
-    """
-
-    netdb_answer = _netdb_pull(column)
-
-    if netdb_answer.get('error') or not netdb_answer.get('out'):
-        return { 
-                'comment' : netdb_answer.get('comment'),
-                'result'  : False,
-                'error'   : True,
-               }
-
-    return {
-            'comment' : netdb_answer.get('comment'),
-            'out'     : netdb_answer['out'].get(__grains__['id']),
-            'result'  : True,
-            }
-
-
 def ls():
     """
     Calls netdb for a list of available columns and returns this list.
@@ -86,12 +19,12 @@ def ls():
         salt sin1 column.ls
 
     """
-    netdb_answer = _netdb_columns()
+    columns = __utils__['column.list']()
 
-    if netdb_answer.get('error'):
-        return netdb_answer
+    if columns.get('error'):
+        return columns
 
-    return netdb_answer['out']
+    return columns.get('out')
 
 
 def get(column, delimiter=':'):
@@ -130,7 +63,7 @@ def get(column, delimiter=':'):
                 'comment' : 'delimiter must be a string or char',
                 }
 
-    ret = _get(column, delimiter)
+    ret = __utils__['column.get'](column, delimiter)
     if not ret or (isinstance(ret, dict) and ret.get('result') == False):
         return []
 
@@ -164,7 +97,7 @@ def keys(column, delimiter=':'):
                 'comment' : 'delimiter must be a string or char',
                 }
 
-    ret = _get(column, delimiter)
+    ret = __utils__['column.get'](column, delimiter)
 
     if isinstance(ret, dict):
         if ret.get('result') == False:
@@ -202,7 +135,7 @@ def item(*arg, **kwarg):
                 }
 
     for column in arg:
-        data = _get(column, delimiter)
+        data = __utils__['column.get'](column, delimiter)
 
         if not data or (isinstance(data, dict) and data.get('result') == False):
             out[column] = []

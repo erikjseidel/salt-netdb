@@ -8,7 +8,6 @@ delete protocols isis
 set protocols isis interface {{ interface['name'] }} passive
 
 {%-     elif interface['passive'] is defined %}
-
 {%-     else %}
 
 set protocols isis interface {{ interface['name'] }}

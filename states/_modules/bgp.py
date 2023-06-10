@@ -16,7 +16,7 @@ def _get_peers():
     """
     Returns salt managed BGP peers on router plus the address families configured for each peer
     """
-    bgp = __salt__['column.pull'](_COLUMN).get('out')
+    bgp = __utils__['column.pull'](_COLUMN).get('out')
     if not bgp:
         return bgp
 
@@ -114,7 +114,7 @@ def generate():
         salt sin1 bgp.generate
 
     """
-    return  __salt__['column.pull'](_COLUMN)
+    return  __utils__['column.pull'](_COLUMN)
 
 
 def enable(peer, test=False, debug=False, force=False):
