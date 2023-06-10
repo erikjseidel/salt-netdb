@@ -1,118 +1,121 @@
+{%- set policy_data = data['out'] %}
 
 delete policy prefix-list
 delete policy prefix-list6
 delete policy route-map
 
-{%- for set_name, meta in data['out'].items() %}
-{%-     if ( meta['prefix_lists'] is defined ) %}
-{%-         for family in meta['prefix_lists'] %}
-{%-             for prefix_list, prefix_list_data in meta['prefix_lists'][family].items() %}
-{%-                 if ( prefix_list_data['rules'] is defined ) %}
-{%-                     for rule in prefix_list_data['rules'] %}
-{%-                         set suffix = '' %}
-{%-                         if ( family == 'ipv6' ) %}
-{%-                             set suffix = '6' %}
-{%-                         endif %}
+{%- if ( policy_data['prefix_lists'] is defined ) %}
+{%-     for family in policy_data['prefix_lists'] %}
+{%-         for prefix_list, prefix_list_data in policy_data['prefix_lists'][family].items() %}
+{%-             if ( prefix_list_data['rules'] is defined ) %}
+{%-                 for rule in prefix_list_data['rules'] %}
+{%-                     set suffix = '' %}
+{%-                     if ( family == 'ipv6' ) %}
+{%-                         set suffix = '6' %}
+{%-                     endif %}
+{%-                     if ( rule['le'] is defined ) %}
 
-{%-                         if ( rule['le'] is defined ) %}
 set policy prefix-list{{ suffix }} {{ prefix_list }} rule {{ loop.index * 5 }} le {{ rule['le'] }}
-{%-                         endif %}
 
-{%-                         if ( rule['ge'] is defined ) %}
+{%-                     endif %}
+{%-                     if ( rule['ge'] is defined ) %}
+
 set policy prefix-list{{ suffix }} {{ prefix_list }} rule {{ loop.index * 5 }} ge {{ rule['ge'] }}
-{%-                         endif %}
 
-{%-                         if ( rule['action'] is defined ) %}
+{%-                     endif %}
+{%-                     if ( rule['action'] is defined ) %}
+
 set policy prefix-list{{ suffix }} {{ prefix_list }} rule {{ loop.index * 5 }} action {{ rule['action'] }}
-{%-                         else %}
+
+{%-                     else %}
+
 set policy prefix-list{{ suffix }} {{ prefix_list }} rule {{ loop.index * 5 }} action permit
-{%-                         endif %}
+
+{%-                     endif %}
 
 set policy prefix-list{{ suffix }} {{ prefix_list }} rule {{ loop.index * 5 }} prefix {{ rule['prefix'] }}
 
-{%-                     endfor %}
-{%-                 endif %}
-{%-             endfor %}
-{%-         endfor %}
-{%-     endif %}
-{%-     if ( meta['route_maps'] is defined ) %}
-{%-         for family in meta['route_maps'] %}
-{%-             set suffix = '' %}
-{%-             set vyos_family = 'ip' %}
-{%-             set global = '' %}
-{%-             if ( family == 'ipv6' ) %}
-{%-                 set vyos_family = 'ipv6' %}
-{%-                 set global = 'global' %}
+{%-                 endfor %}
 {%-             endif %}
-{%-             for route_map, route_map_data in meta['route_maps'][family].items() %}
-{%-                 for rule in route_map_data['rules'] %}
+{%-         endfor %}
+{%-     endfor %}
+{%- endif %}
+{%- if ( policy_data['route_maps'] is defined ) %}
+{%-     for family in policy_data['route_maps'] %}
+{%-         set suffix = '' %}
+{%-         set vyos_family = 'ip' %}
+{%-         set global = '' %}
+{%-         if ( family == 'ipv6' ) %}
+{%-             set vyos_family = 'ipv6' %}
+{%-             set global = 'global' %}
+{%-         endif %}
+{%-         for route_map, route_map_data in policy_data['route_maps'][family].items() %}
+{%-             for rule in route_map_data['rules'] %}
 
 set policy route-map {{ route_map }} rule {{ rule['number'] }} action {{ rule['action'] }}
 
-{%-                     if ( rule['continue'] is defined ) %}
+{%-                 if ( rule['continue'] is defined ) %}
 
 set policy route-map {{ route_map }} rule {{ rule['number'] }} continue {{ rule['continue'] }}
 
-{%-                     endif %}
-
-{%-                     if ( rule['match'] is defined ) %}
-{%-                         if ( rule['match']['community_list'] is defined ) %}
+{%-                 endif %}
+{%-                 if ( rule['match'] is defined ) %}
+{%-                     if ( rule['match']['community_list'] is defined ) %}
 
 set policy route-map {{ route_map }} rule {{ rule['number'] }} match community community-list {{ rule['match']['community_list'] }}
 
-{%-                         endif %}
-{%-                         if ( rule['match']['as_path'] is defined ) %}
+{%-                     endif %}
+{%-                     if ( rule['match']['as_path'] is defined ) %}
 
 set policy route-map {{ route_map }} rule {{ rule['number'] }} match as-path {{ rule['match']['as_path'] }}
 
-{%-                         endif %}
-{%-                         if ( rule['match']['rpki'] is defined ) %}
+{%-                     endif %}
+{%-                     if ( rule['match']['rpki'] is defined ) %}
 
 set policy route-map {{ route_map }} rule {{ rule['number'] }} match rpki {{ rule['match']['rpki'] }}
 
-{%-                         endif %}
-{%-                         if ( rule['match']['prefix_list'] is defined ) %}
+{%-                     endif %}
+{%-                     if ( rule['match']['prefix_list'] is defined ) %}
 
 set policy route-map {{ route_map }} rule {{ rule['number'] }} match {{ vyos_family }} address prefix-list {{ rule['match']['prefix_list'] }}
 
-{%-                         endif %}
 {%-                     endif %}
-{%-                     if ( rule['set'] is defined ) %}
-{%-                             if ( rule['set']['local_pref'] is defined ) %}
+{%-                 endif %}
+{%-                 if ( rule['set'] is defined ) %}
+{%-                     if ( rule['set']['local_pref'] is defined ) %}
 
 set policy route-map {{ route_map }} rule {{ rule['number'] }} set local-preference {{ rule['set']['local_pref'] }}
 
-{%-                             endif %}
-{%-                             if ( rule['set']['origin'] is defined ) %}
+{%-                     endif %}
+{%-                     if ( rule['set']['origin'] is defined ) %}
 
 set policy route-map {{ route_map }} rule {{ rule['number'] }} set origin {{ rule['set']['origin'] }}
 
-{%-                             endif %}
-{%-                             if ( rule['set']['community'] is defined ) %}
+{%-                     endif %}
+{%-                     if ( rule['set']['community'] is defined ) %}
 
 set policy route-map {{ route_map }} rule {{ rule['number'] }} set community '{{ rule['set']['community'] }}'
 
-{%-                             endif %}
-{%-                             if ( rule['set']['large_community'] is defined ) %}
+{%-                     endif %}
+{%-                     if ( rule['set']['large_community'] is defined ) %}
 
 set policy route-map {{ route_map }} rule {{ rule['number'] }} set large-community '{{ rule['set']['large_community'] }}'
 
-{%-                             endif %}
-{%-                             if ( rule['set']['as_path_exclude'] is defined ) %}
+{%-                     endif %}
+{%-                     if ( rule['set']['as_path_exclude'] is defined ) %}
 
 set policy route-map {{ route_map }} rule {{ rule['number'] }} set as-path-exclude '{{ rule['set']['as_path_exclude'] }}'
 
-{%-                             endif %}
-{%-                             if ( rule['set']['next_hop'] is defined ) %}
+{%-                     endif %}
+{%-                     if ( rule['set']['next_hop'] is defined ) %}
 
 set policy route-map {{ route_map }} rule {{ rule['number'] }} set {{ vyos_family }}-next-hop {{ global }} {{ rule['set']['next_hop'] }}
 
-{%-                             endif %}
 {%-                     endif %}
-{%-                 endfor %}
+{%-                 endif %}
 {%-             endfor %}
 {%-         endfor %}
-{%-     endif %}
-{%- endfor %}
+{%-     endfor %}
+{%- endif %}
 
 comment policy 'The following policy nodes are SALT MANAGED: prefix-list, prefix-list6, route-map'

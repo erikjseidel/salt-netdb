@@ -2,7 +2,7 @@ import logging
 
 __virtualname__ = "bgp"
 
-log = logging.getLogger(__file__)
+logger = logging.getLogger(__file__)
 
 _COLUMN = 'bgp'
 #  bgp disabled peers stored in this redis key.
@@ -269,26 +269,17 @@ def summary(family='both'):
 
     name = 'bgp_summary'
 
-    ret = {"result": False, "comment": "unsupported operating system."}
-
     if family not in ['ipv4', 'ipv6', 'both']:
         return {"result": False, "comment": "unsupported address family."}
 
-    if ( __grains__['os'] == "vyos" ):
-        command = 'show bgp summary'
+    command = 'show bgp summary'
 
-        if family == 'ipv4':
-            command = 'show ip bgp summary'
-        elif family == 'ipv6':
-            command = 'show ipv6 bgp summary'
+    if family == 'ipv4':
+        command = 'show ip bgp summary'
+    elif family == 'ipv6':
+        command = 'show ipv6 bgp summary'
 
-        ret.update(
-            __salt__['net.cli'](
-                command,
-            )
-        )
-    else:
-        return ret
+    ret = __salt__['net.cli'](command)
 
     disabled_peers = _get_disabled_peers()['out']
 

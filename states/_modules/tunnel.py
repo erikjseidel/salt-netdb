@@ -1,12 +1,8 @@
-# -*- coding: utf-8 -*-
-
-import logging, copy, json
-import socket, struct
-import salt.utils.http
+import logging, socket, struct
 
 __virtualname__ = "tunnel"
 
-log = logging.getLogger(__file__)
+logger = logging.getLogger(__file__)
 
 _COLUMN = 'interface'
 
@@ -17,26 +13,18 @@ def __virtual__():
     return __virtualname__
 
 
-def _netdb_pull():
-    router = __grains__['id']
-    netdb_answer =  __salt__['netdb.get_column'](_COLUMN)
-
-    if not netdb_answer['result'] or 'out' not in netdb_answer:
-        return netdb_answer
+def _get_tunnels():
+    interfaces = __salt__['column.pull'](_COLUMN).get('out')
+    if not interfaces:
+        return { 'result' : False }
     
-    interfaces = netdb_answer['out']
-
     tunnels = {}
 
-    for iface, iface_data in interfaces[router].items():
+    for iface, iface_data in interfaces.items():
         if iface.startswith('tun'):
             tunnels[iface] = iface_data
 
     return { 'result': True, 'out': tunnels }
-
-
-def _enable_interface(interface, disable=False, test=True):
-    return __salt__['netdb.enable_interface'](_COLUMN, interface, disable=disable, test=test)
 
 
 def _ip2long(ip):
@@ -103,20 +91,16 @@ def generate():
 
     .. code-block:: bash
 
-        salt sin1-proxy tunnel.generate
+        salt sin1 tunnel.generate
 
     """
-
-    ret_tunnels = _netdb_pull()
+    ret_tunnels = _get_tunnels()
     if not ret_tunnels['result']:
-        ret_tunnels.update({ 'error': True })
         return ret_tunnels
 
-    tunnels = ret_tunnels['out']
+    tunnels = ret_tunnels.get('out')
 
-    ret = {'out': {}, 'result': False, 'error': False}
-
-    disabled_tunnels = _get_disabled_tunnels()['out']
+    disabled_tunnels = _get_disabled_tunnels().get('out')
 
     for tunnel, settings in tunnels.items():
         # netdb overrides redis if setting present there.
@@ -129,18 +113,19 @@ def generate():
         if 'key' in settings:
             settings['key_vyos'] = _ip2long(settings['key'])
 
-    ret.update({'result': True, 'out': tunnels})
+    return {
+            'result'  : True,
+            'out'     : tunnels,
+            'comment' : 'Tunnel interfaces generated for ' + __grains__['id']
+            }
 
-    return ret
 
-
-def enable(tunnel, test=False, permanent=False, debug=False, force=False):
+def enable(tunnel, test=False, debug=False, force=False):
     """
     Enable a salt managed tunnel. The router and tunnel must exist in netdb.
 
     :param tunnel: The name of the tunnel to be enabled
     :param test: True for dry-run. False to apply on the router.
-    :param permanent: True to update netdb in addition to router and local REDIS
     :param debug: True to show additional debugging information
     :param force: Force a commit to the router for a tunnel not marked as disabled in REDIS
     :return: a dictionary consisting of the following keys:
@@ -152,19 +137,18 @@ def enable(tunnel, test=False, permanent=False, debug=False, force=False):
 
     .. code-block:: bash
 
-        salt sin1-proxy tunnel.enable tun261
-        salt sin1-proxy tunnel.enable tun261 test=True
-        salt sin1-proxy tunnel.enable tun261 force=False
+        salt sin1 tunnel.enable tun261
+        salt sin1 tunnel.enable tun261 test=True
+        salt sin1 tunnel.enable tun261 force=False
 
     """
-
     name = 'enable_tunnel'
-    ret = {"result": False, "comment": "Tunnel does not exist on selected router."}
+    ret = { "result": False }
 
     if not tunnel:
         ret = {"result": False, "comment": "No tunnel selected."}
 
-    ret_tunnels = _netdb_pull()
+    ret_tunnels = _get_tunnels()
     if not ret_tunnels['result']:
         return ret_tunnels
 
@@ -175,7 +159,7 @@ def enable(tunnel, test=False, permanent=False, debug=False, force=False):
     else:
         ret = _is_marked_disabled(tunnel)
 
-        if not ret['out'] and not force:
+        if not ret.get('out') and not force:
             ret = {
                 "result": False,
                 "comment": "Tunnel not marked as disabled in REDIS. Use force=true to commit anyway."
@@ -195,24 +179,15 @@ def enable(tunnel, test=False, permanent=False, debug=False, force=False):
             if not force and not test:
                 _remove_disable_mark(tunnel, tunnels)
 
-            if permanent:
-                result = _enable_interface(tunnel, disable=False, test=test)
-                ret['comment']     += ' Permanent (netdb) disable requested.'
-                ret['netdb'] = { 
-                        'result'  : result['result'],
-                        'comment' : result['comment'],
-                        }
-
     return ret
 
 
-def disable(tunnel, test=False, permanent=False, debug=False, force=False):
+def disable(tunnel, test=False, debug=False, force=False):
     """
     Disable a salt managed tunnel. The router and tunnel must exist in netdb.
 
     :param tunnel: The name of the tunnel to be disabled
     :param test: True for dry-run. False to apply on the router.
-    :param permanent: True to update netdb in addition to router and local REDIS
     :param debug: True to show additional debugging information
     :param force: Force a commit to the router for a tunnel marked as disabled in REDIS
     :return: a dictionary consisting of the following keys:
@@ -224,18 +199,18 @@ def disable(tunnel, test=False, permanent=False, debug=False, force=False):
 
     .. code-block:: bash
 
-        salt sin1-proxy tunnel.disable tun261
-        salt sin1-proxy tunnel.disable tun261 test=True
-        salt sin1-proxy tunnel.disable tun261 force=False
+        salt sin1 tunnel.disable tun261
+        salt sin1 tunnel.disable tun261 test=True
+        salt sin1 tunnel.disable tun261 force=False
 
     """
     name = 'disable_tunnel'
-    ret = {"result": False, "comment": "Tunnel does not exist on selected router."}
+    ret = { "result": False }
 
     if not tunnel:
         ret = {"result": False, "comment": "No tunnel selected."}
 
-    ret_tunnels = _netdb_pull()
+    ret_tunnels = _get_tunnels()
     if not ret_tunnels['result']:
         return ret_tunnels
 
@@ -246,7 +221,7 @@ def disable(tunnel, test=False, permanent=False, debug=False, force=False):
     else:
         ret = _is_marked_disabled(tunnel)
 
-        if ret['out'] and not force:
+        if ret.get('out') and not force:
             ret = {
                 "result": False,
                 "comment": "Tunnel is already marked disabled in REDIS. Use force=true to commit anyway."
@@ -266,14 +241,6 @@ def disable(tunnel, test=False, permanent=False, debug=False, force=False):
             if not force and not test:
                 _mark_disabled_tunnel(tunnel, tunnels)
 
-            if permanent:
-                result = _enable_interface(tunnel, disable=True, test=test)
-                ret['comment']     += ' Permanent (netdb) disable requested.'
-                ret['netdb'] = { 
-                        'result'  : result['result'],
-                        'comment' : result['comment'],
-                        }
-
     return ret
 
 
@@ -292,27 +259,16 @@ def display():
 
     .. code-block:: bash
 
-        salt sin1-proxy tunnel.display
+        salt sin1 tunnel.display
 
     """
+    ret_tunnels = _get_tunnels()
 
-    ret_tunnels = _netdb_pull()
-
-    ret = {"result": False, "comment": "unsupported operating system."}
-
-    if (
-        __grains__['os'] == "vyos"
-       ):
-
-        ret.update(
-            __salt__['net.cli'](
-                "show interface tunnel",
-            )
-        )
+    ret =  __salt__['net.cli']("show interface tunnel")
     
-    disabled_tunnels = _get_disabled_tunnels()['out']
+    disabled_tunnels = _get_disabled_tunnels().get('out')
 
-    if ret_tunnels['result']:
+    if ret_tunnels.get('result'):
         tunnel_list = []
         tunnels = ret_tunnels['out']
         for tunnel in tunnels:

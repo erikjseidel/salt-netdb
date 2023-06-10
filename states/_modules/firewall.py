@@ -1,24 +1,13 @@
-# -*- coding: utf-8 -*-
-
 import logging
 
 __virtualname__ = "firewall"
 
-log = logging.getLogger(__file__)
+logger = logging.getLogger(__file__)
 
 _COLUMN = 'firewall'
 
 def __virtual__():
     return __virtualname__
-
-
-def _netdb_pull():
-    netdb_answer =  __salt__['netdb.get_column'](_COLUMN)
-
-    if not netdb_answer['result'] or 'out' not in netdb_answer:
-        netdb_answer.update({ 'error': True })
-
-    return netdb_answer
 
 
 def generate():
@@ -35,8 +24,8 @@ def generate():
 
     .. code-block:: bash
 
-        salt sin1-proxy firewall.generate
+        salt sin1 firewall.generate
 
     """
 
-    return _netdb_pull()
+    return __salt__['column.pull'](_COLUMN)

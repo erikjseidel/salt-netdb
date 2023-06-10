@@ -1,24 +1,13 @@
-# -*- coding: utf-8 -*-
-
 import logging
 
 __virtualname__ = "policy"
 
-log = logging.getLogger(__file__)
+logger = logging.getLogger(__file__)
 
 _COLUMN = 'policy'
 
 def __virtual__():
     return __virtualname__
-
-
-def _netdb_pull():
-    netdb_answer =  __salt__['netdb.get_column'](_COLUMN)
-
-    if not netdb_answer['result'] or 'out' not in netdb_answer:
-        netdb_answer.update({ 'error': True })
-
-    return netdb_answer
 
 
 def generate():
@@ -39,4 +28,4 @@ def generate():
 
     """
 
-    return _netdb_pull()
+    return __salt__['column.pull'](_COLUMN)

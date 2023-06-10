@@ -7,113 +7,113 @@ delete protocols bgp
 set protocols bgp {{ local_asn }} parameters default no-ipv4-unicast
 set protocols bgp {{ local_asn }} parameters graceful-restart
 
-{%-   if 'options' in bgp_data %}
-{%-       if 'router_id' in bgp_data['options'] %}
+{%- if 'options' in bgp_data %}
+{%-     if 'router_id' in bgp_data['options'] %}
 
 set protocols bgp {{ local_asn }} parameters router-id {{ bgp_data['options']['router_id'] }}
 
-{%-       endif %}
-{%-       if 'log_neighbor_changes' in bgp_data['options'] and bgp_data['options']['log_neighbor_changes'] %}
+{%-     endif %}
+{%-     if 'log_neighbor_changes' in bgp_data['options'] and bgp_data['options']['log_neighbor_changes'] %}
 
 set protocols bgp {{ local_asn }} parameters log-neighbor-changes
 
-{%-       endif %}
-{%-       if 'hold_time' in bgp_data['options'] %}
+{%-     endif %}
+{%-     if 'hold_time' in bgp_data['options'] %}
 
 set protocols bgp {{ local_asn }} timers holdtime {{ bgp_data['options']['hold_time'] }}
 
-{%-       endif %}
-{%-       if 'keepalive_time' in bgp_data['options'] %}
+{%-     endif %}
+{%-     if 'keepalive_time' in bgp_data['options'] %}
 
 set protocols bgp {{ local_asn }} timers keepalive {{ bgp_data['options']['keepalive_time'] }}
 
-{%-       endif %}
-{%-   endif %}
-{%-   if bgp_data['address_family'] is defined %}
-{%-       for family_name, family_data in bgp_data['address_family'].items() %}
-{%-           if family_data['networks'] is defined %}
-{%-               for network_name, network_data in family_data['networks'].items() %}
+{%-     endif %}
+{%- endif %}
+{%- if bgp_data['address_family'] is defined %}
+{%-     for family_name, family_data in bgp_data['address_family'].items() %}
+{%-         if family_data['networks'] is defined %}
+{%-             for network_name, network_data in family_data['networks'].items() %}
 
 set protocols bgp {{ local_asn }} address-family {{ family_name }}-unicast network {{ network_name }}
 
-{%-               endfor %}
-{%-           endif %}
-{%-           if family_data['redistribute'] is defined %}
-{%-               for redistribute_name, redistribute_data in family_data['redistribute'].items() %}
-{%-                   if redistribute_name not in ['datasource', 'weight'] %}
+{%-             endfor %}
+{%-         endif %}
+{%-         if family_data['redistribute'] is defined %}
+{%-             for redistribute_name, redistribute_data in family_data['redistribute'].items() %}
+{%-                 if redistribute_name not in ['datasource', 'weight'] %}
 
 set protocols bgp {{ local_asn }} address-family {{ family_name }}-unicast redistribute {{ redistribute_name }}
 
-{%-                   endif %}
-{%-               endfor %}
-{%-           endif %}
-{%-       endfor %}
-{%-   endif %}
-{%-   if 'peer_groups' in bgp_data %}
-{%-       for peer_group_name, peer_bgp_data in bgp_data['peer_groups'].items() %}
-{%-           if peer_bgp_data['source'] is defined %}
+{%-                 endif %}
+{%-             endfor %}
+{%-         endif %}
+{%-     endfor %}
+{%- endif %}
+{%- if 'peer_groups' in bgp_data %}
+{%-     for peer_group_name, peer_bgp_data in bgp_data['peer_groups'].items() %}
+{%-         if peer_bgp_data['source'] is defined %}
 
 set protocols bgp {{ local_asn }} peer-group {{ peer_group_name }} update-source {{ peer_bgp_data['source'] }}
 
-{%-           endif %}
-{%-           if peer_bgp_data['password'] is defined %}
+{%-         endif %}
+{%-         if peer_bgp_data['password'] is defined %}
 
 set protocols bgp {{ local_asn }} peer-group {{ peer_group_name }} password {{ peer_bgp_data['password'] }}
 
-{%-           endif %}
-{%-           if peer_bgp_data['type'] is defined and peer_bgp_data['type'] == 'ibgp' %}
+{%-         endif %}
+{%-         if peer_bgp_data['type'] is defined and peer_bgp_data['type'] == 'ibgp' %}
 
 set protocols bgp {{ local_asn }} peer-group {{ peer_group_name }} remote-as internal
 
-{%-           else %}
-{%-               if peer_bgp_data['remote_asn'] is defined %}
+{%-         else %}
+{%-             if peer_bgp_data['remote_asn'] is defined %}
 
 set protocols bgp {{ local_asn }} peer-group {{ peer_group_name }} remote-as {{ peer_bgp_data['remote_asn'] }}
 
-{%-               endif %}
-{%-               if peer_bgp_data['multihop'] is defined %}
+{%-             endif %}
+{%-             if peer_bgp_data['multihop'] is defined %}
 
 set protocols bgp {{ local_asn }} peer-group {{ peer_group_name }} ebgp-multihop {{ peer_bgp_data['multihop'] }}
 
-{%-               endif %}
-{%-           endif %}
+{%-             endif %}
+{%-         endif %}
 
-{%-           if peer_bgp_data['family'] is defined %}
-{%-               for family_name, family_data in peer_bgp_data['family'].items() %}
-{%-                   if family_data['nhs'] is defined and family_data['nhs'] %}
+{%-         if peer_bgp_data['family'] is defined %}
+{%-             for family_name, family_data in peer_bgp_data['family'].items() %}
+{%-                 if family_data['nhs'] is defined and family_data['nhs'] %}
 
 set protocols bgp {{ local_asn }} peer-group {{ peer_group_name }} address-family {{ family_name }}-unicast nexthop-self
 
-{%-                   endif %}
-{%-                   if family_data['route_map'] is defined %}
-{%-                       for route_map_name, route_map_data in family_data['route_map'].items() %}
+{%-                 endif %}
+{%-                 if family_data['route_map'] is defined %}
+{%-                     for route_map_name, route_map_data in family_data['route_map'].items() %}
 
 set protocols bgp {{ local_asn }} peer-group {{ peer_group_name }} address-family {{ family_name }}-unicast route-map {{ route_map_name }} {{ route_map_data }}
 
-{%-                       endfor %}
-{%-                   endif %}
-{%-               endfor %}
-{%-           endif %}
-{%-       endfor %}
-{%-   endif %}
-{%-   if 'neighbors' in bgp_data %}
-{%-       for name, settings in bgp_data['neighbors'].items() %}
+{%-                     endfor %}
+{%-                 endif %}
+{%-             endfor %}
+{%-         endif %}
+{%-     endfor %}
+{%- endif %}
+{%- if 'neighbors' in bgp_data %}
+{%-     for name, settings in bgp_data['neighbors'].items() %}
 
 set protocols bgp {{ local_asn }} neighbor {{ name }}
 
-{%-           if 'peer_group' in settings %}
+{%-         if 'peer_group' in settings %}
 
 set protocols bgp {{ local_asn }} neighbor {{ name }} peer-group {{ settings['peer_group'] }}
 
-{%-           endif %}
-{%-           if 'timers' in settings %}
-{%-               for timer, wait in settings['timers'].items() %}
+{%-         endif %}
+{%-         if 'timers' in settings %}
+{%-             for timer, wait in settings['timers'].items() %}
 
 set protocols bgp {{ local_asn }} neighbor {{ name }} timers {{ timer }} {{ wait }}
 
-{%-               endfor %}
-{%-           endif %}
-{%-       endfor %}
-{%-   endif %}
+{%-             endfor %}
+{%-         endif %}
+{%-     endfor %}
+{%- endif %}
 
 comment protocols bgp {{ local_asn }} 'Node protocols bgp is SALT MANAGED'

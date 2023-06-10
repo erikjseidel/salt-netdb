@@ -1,11 +1,8 @@
-# -*- coding: utf-8 -*-
-
 import logging
-import copy
 
 __virtualname__ = "loopback"
 
-log = logging.getLogger(__file__)
+logger = logging.getLogger(__file__)
 
 _COLUMN = 'interface'
 
@@ -13,22 +10,22 @@ def __virtual__():
     return __virtualname__
 
 
-def _netdb_pull():
-    router = __grains__['id']
-    netdb_answer =  __salt__['netdb.get_column'](_COLUMN)
-
-    if not netdb_answer['result'] or 'out' not in netdb_answer:
-        return netdb_answer
-
-    interfaces = netdb_answer['out']
+def _get_loopbacks():
+    interfaces =  __salt__['column.pull'](_COLUMN).get('out')
+    if not interfaces: 
+        return { 'result' : False }
 
     loopbacks = {}
 
-    for iface, iface_data in interfaces[router].items():
+    for iface, iface_data in interfaces.items():
         if iface.startswith('dum'):
             loopbacks[iface] = iface_data
 
-    return { 'result': True, 'out': loopbacks }
+    return {
+            'result'  : True,
+            'out'     : loopbacks,
+            'comment' : 'Loopback interfaces generated for ' + __grains__['id']
+            }
 
 
 def generate():
@@ -45,17 +42,11 @@ def generate():
 
     .. code-block:: bash
 
-        salt sin1-proxy loopback.generate
+        salt sin1 loopback.generate
 
     """
     
-    ret_lo = _netdb_pull()
-    if not ret_lo['result']:
-        return ret_lo
-
-    ifaces = ret_lo['out']
-
-    return {'result': True, 'out': ifaces}
+    return _get_loopbacks()
 
 
 def display():
@@ -73,26 +64,15 @@ def display():
 
     .. code-block:: bash
 
-        salt sin1-proxy loopback.display
+        salt sin1 loopback.display
 
     """
+    ret_lo = _get_loopbacks()
 
-    ret_lo = _netdb_pull()
-
-    ret = {"result": False, "comment": "unsupported operating system."}
-
-    if (
-        __grains__['os'] == "vyos"
-       ):
-
-        ret.update(
-            __salt__['net.cli'](
-                "show interface dummy",
-            )
-        )
+    ret = __salt__['net.cli']("show interface dummy")
     
     if ret_lo['result']:
-        ifaces = ret_lo['out']
+        ifaces = ret_lo.get('out')
         iface_list = []
         for interface in ifaces:
             data = interface

@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
-
 import logging
 import copy
 
 __virtualname__ = "ethernet"
 
-log = logging.getLogger(__file__)
+logger = logging.getLogger(__file__)
 
 _COLUMN = 'interface'
 
@@ -17,25 +15,18 @@ def __virtual__():
     return __virtualname__
 
 
-def _netdb_pull():
-    router = __grains__['id']
-    netdb_answer =  __salt__['netdb.get_column'](_COLUMN)
-
-    if not netdb_answer['result'] or 'out' not in netdb_answer:
-        return netdb_answer
-
-    interfaces = netdb_answer['out']
+def _get_ethernet():
+    interfaces =  __salt__['column.pull'](_COLUMN).get('out')
+    if not interfaces:
+        return { 'result' : False }
 
     ethernet = {}
 
-    for iface, iface_data in interfaces[router].items():
+    for iface, iface_data in interfaces.items():
         if iface.startswith('eth') or iface.startswith('bond'):
             ethernet[iface] = iface_data
 
     return { 'result': True, 'out': ethernet }
-
-def _enable_interface(interface, disable=False, test=True):
-    return __salt__['netdb.enable_interface'](_COLUMN, interface, disable=disable, test=test)
 
 
 def _is_marked_disabled(interface):
@@ -88,16 +79,14 @@ def generate():
 
     .. code-block:: bash
 
-        salt sin1-proxy ethernet.generate
+        salt sin1 ethernet.generate
 
     """
-    ret_ethernet = _netdb_pull()
-    if not ret_ethernet['result']:
+    ret_ethernet = _get_ethernet()
+    if not ret_ethernet.get('result'):
         return ret_ethernet
 
-    ifaces = ret_ethernet['out']
-
-    ret = {'out': {}, 'result': False, 'error': False}
+    ifaces = ret_ethernet.get('out')
 
     disabled_ifaces = _get_disabled_interfaces()['out']
 
@@ -124,19 +113,20 @@ def generate():
         else:
             return {'result': False, 'comment': interface + ": unsupported interface type!"}
 
-    ret.update({'result': True, 'out': ifaces})
+    return {
+            'result'  : True, 
+            'out'     : ifaces, 
+            'comment' : 'Ethernet interfaces generated for ' + __grains__['id']
+            }
 
-    return ret
 
-
-def enable(interface, test=False, permanent=False, debug=False, force=False):
+def enable(interface, test=False, debug=False, force=False):
     """
     Enable a salt managed ethernet, vlan or bundle interface. The interface must exist in 
     netdb.
 
     :param interface: The name of the interface to be enabled
     :param test: True for dry-run. False to apply on the router.
-    :param permanent: True to update netdb in addition to router and local REDIS
     :param debug: True to show additional debugging information
     :param force: Force a commit to the router for a tunnel not marked as disabled in REDIS
     :return: a dictionary consisting of the following keys:
@@ -148,9 +138,9 @@ def enable(interface, test=False, permanent=False, debug=False, force=False):
 
     .. code-block:: bash
 
-        salt sin1-proxy ethernet.enable bond0.17
-        salt sin1-proxy ethernet.enable bond0.15 test=True
-        salt sin1-proxy ethernet.enable eth1 force=False
+        salt sin1 ethernet.enable bond0.17
+        salt sin1 ethernet.enable bond0.15 test=True
+        salt sin1 ethernet.enable eth1 force=False
 
     """
     name = 'enable_ethernet'
@@ -159,11 +149,11 @@ def enable(interface, test=False, permanent=False, debug=False, force=False):
     if not interface:
         ret = {"result": False, "comment": "No interface selected."}
 
-    ret_ifaces = _netdb_pull()
-    if not ret_ifaces['result']:
+    ret_ifaces = _get_ethernet()
+    if not ret_ifaces.get('result'):
         return ret_ifaces
 
-    ifaces = ret_ifaces['out']
+    ifaces = ret_ifaces.get('out')
 
     if interface not in ifaces.keys():
         ret = {"result": False, "comment": "Interface not found on this router."}
@@ -192,7 +182,7 @@ def enable(interface, test=False, permanent=False, debug=False, force=False):
 
         ret = _is_marked_disabled(interface)
 
-        if not ret['out'] and not force:
+        if not ret.get('out') and not force:
             ret = {
                 "result": False,
                 "comment": "Interface not marked as disabled in REDIS. Use force=true to commit anyway."
@@ -213,24 +203,15 @@ def enable(interface, test=False, permanent=False, debug=False, force=False):
             if not force and not test:
                 _remove_disable_mark(interface)
 
-            if permanent:
-                result = _enable_interface(interface, disable=False, test=test)
-                ret['comment']     += ' Permanent (netdb) disable requested.'
-                ret['netdb'] = { 
-                        'result'  : result['result'],
-                        'comment' : result['comment'],
-                        }
-
     return ret
 
 
-def disable(interface, test=False, permanent=False, debug=False, force=False):
+def disable(interface, test=False, debug=False, force=False):
     """
     Disable a salt managed interface. The interface must exist in netdb.
 
     :param interface: The name of the tunnel to be disabled
     :param test: True for dry-run. False to apply on the router.
-    :param permanent: True to update netdb in addition to router and local REDIS
     :param debug: True to show additional debugging information
     :param force: Force a commit to the router for a tunnel marked as disabled in REDIS
     :return: a dictionary consisting of the following keys:
@@ -242,9 +223,9 @@ def disable(interface, test=False, permanent=False, debug=False, force=False):
 
     .. code-block:: bash
 
-        salt sin1-proxy ethernet.disable eth1
-        salt sin1-proxy ethernet.disable eth1 test=True
-        salt sin1-proxy ethernet.disable bond0.902 force=False
+        salt sin1 ethernet.disable eth1
+        salt sin1 ethernet.disable eth1 test=True
+        salt sin1 ethernet.disable bond0.902 force=False
 
     """
     name = 'disable_ethernet'
@@ -253,11 +234,11 @@ def disable(interface, test=False, permanent=False, debug=False, force=False):
     if not interface:
         ret = {"result": False, "comment": "No interface selected."}
 
-    ret_ifaces = _netdb_pull()
-    if not ret_ifaces['result']:
+    ret_ifaces = _get_ethernet()
+    if not ret_ifaces.get('result'):
         return ret_ifaces
 
-    ifaces = ret_ifaces['out']
+    ifaces = ret_ifaces.get('out')
 
     if interface not in ifaces.keys():
         ret = {"result": False, "comment": "Interface not found on this router."}
@@ -286,7 +267,7 @@ def disable(interface, test=False, permanent=False, debug=False, force=False):
 
         ret = _is_marked_disabled(interface)
 
-        if ret['out'] and not force:
+        if ret.get('out') and not force:
             ret = {
                 "result": False,
                 "comment": "Interface is already marked disabled in REDIS. Use force=true to commit anyway."
@@ -307,14 +288,6 @@ def disable(interface, test=False, permanent=False, debug=False, force=False):
             if not force and not test:
                 _mark_disabled_interface(interface)
 
-            if permanent:
-                result = _enable_interface(interface, disable=True, test=test)
-                ret['comment']     += ' Permanent (netdb) disable requested.'
-                ret['netdb'] = { 
-                        'result'  : result['result'],
-                        'comment' : result['comment'],
-                        }
-
     return ret
 
 
@@ -333,12 +306,10 @@ def display(type='ethernet'):
 
     .. code-block:: bash
 
-        salt sin1-proxy tunnel.display
+        salt sin1 ethernet.display
 
     """
-    ret_ifaces = _netdb_pull()
-
-    ret = {"result": False, "comment": "unsupported operating system."}
+    ret_ifaces = _get_ethernet()
 
     if type not in ['ethernet', 'lag']:
         return {"result": False, "comment": "unsupported interface type."}
@@ -346,15 +317,7 @@ def display(type='ethernet'):
     if type == 'lag':
         type = 'bonding'
 
-    if (
-        __grains__['os'] == "vyos"
-       ):
-
-        ret.update(
-            __salt__['net.cli'](
-                "show interface " + type,
-            )
-        )
+    ret = __salt__['net.cli']("show interface " + type)
     
     disabled_ifaces = _get_disabled_interfaces()['out']
 
