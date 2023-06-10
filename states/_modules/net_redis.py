@@ -1,56 +1,8 @@
+import logging, json
 
-import json
-import logging
-
-try:
-    import redis
-    HAS_REDIS = True
-except ( ImportError, ModuleNotFoundError):
-    HAS_REDIS = False
-
+logger = logging.getLogger(__file__)
 
 __virtualname__ = 'net_redis'
-
-# For docker
-_NET_REDIS_HOST = '172.17.0.1'
-#_NET_REDIS_HOST = '172.17.0.1'
-_NET_REDIS_PORT = 6379
-_NET_REDIS_DB   = '0'
-
-log = logging.getLogger(__name__)
-
-def _get_redis_server():
-
-    return redis.Redis(
-            host=_NET_REDIS_HOST, 
-            port=_NET_REDIS_PORT, 
-            db=_NET_REDIS_DB
-            )
-
-def _get_kv( redis_key ):
-
-    _redis_server = _get_redis_server()
-
-    if _redis_server is None:
-        return { 'return': False, 'out': None }
-
-    value = _redis_server.get(redis_key)
-    if not value:
-        return { 'return': True, 'out': None }
-
-    out_data = json.loads(value)
-
-    return { 'return': True, 'out': out_data }
-
-
-def _set_kv( redis_key, value ):
-
-    _redis_server = _get_redis_server()
-
-    if _redis_server is None:
-        return { 'return': False, 'out': None }
-
-    _redis_server.set(redis_key, json.dumps(value))
 
 
 """
@@ -92,7 +44,7 @@ def add_entry(key, entry):
     """
     router = __grains__['id']
 
-    entries = _get_kv(key)
+    entries = __utils__['net_redis.get_kv'](key)
 
     if entries['out'] == None:
         entries['out'] = { router : [ entry ] }
@@ -110,7 +62,7 @@ def add_entry(key, entry):
         else:
             entries['out'][router] = [ entry ]
 
-    _set_kv(key, entries['out'])
+    __utils__['net_redis.set_kv'](key, entries['out'])
 
     return { "result": True, "comment": 'Entry successfully added', 'out': entries['out'][router] }
 
@@ -132,7 +84,7 @@ def remove_entry(key, entry):
 
     already_exists = False
 
-    entries = _get_kv(key)
+    entries = __utils__['net_redis.get_kv'](key)
 
     if entries['out'] != None:
         if router in entries['out']:
@@ -142,7 +94,7 @@ def remove_entry(key, entry):
     if already_exists:
         entries['out'][router].remove(entry)
 
-        _set_kv(key, entries['out'])
+        __utils__['net_redis.set_kv'](key, entries['out'])
 
         return { "result": True, "comment": 'Entry removed', 'out': entries['out'][router] }
 
@@ -161,7 +113,7 @@ def get_entries(key):
 
     """
     router = __grains__['id']
-    entries = _get_kv(key)
+    entries = __utils__['net_redis.get_kv'](key)
 
     if entries['out'] != None:
         if router in entries['out'].keys():
