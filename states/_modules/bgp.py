@@ -286,7 +286,7 @@ def summary(family='both'):
     peer_list = []
     for peer, peer_data in peers.items():
         if family == 'both' or family in peer_data['families']:
-            data = "{0:30} {1:20}".format(peer, peer_data['peer_group'])
+            data = "{0:30} {1:20}".format(peer, peer_data.get('peer_group', '') )
             if peer in disabled_peers:
                 data += "\t[disabled]"
             peer_list.append(data)
