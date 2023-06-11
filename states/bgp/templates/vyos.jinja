@@ -113,6 +113,48 @@ set protocols bgp {{ local_asn }} neighbor {{ name }} timers {{ timer }} {{ wait
 
 {%-             endfor %}
 {%-         endif %}
+{%-         if settings['source'] is defined %}
+
+set protocols bgp {{ local_asn }} neighbor {{ name }} update-source {{ settings['source'] }}
+
+{%-         endif %}
+{%-         if settings['password'] is defined %}
+
+set protocols bgp {{ local_asn }} neighbor {{ name }} password {{ settings['password'] }}
+
+{%-         endif %}
+{%-         if settings['type'] is defined and settings['type'] == 'ibgp' %}
+
+set protocols bgp {{ local_asn }} neighbor {{name }} remote-as internal
+
+{%-         else %}
+{%-             if settings['remote_asn'] is defined %}
+
+set protocols bgp {{ local_asn }} neighbor {{ name }} remote-as {{ settings['remote_asn'] }}
+
+{%-             endif %}
+{%-             if settings['multihop'] is defined %}
+
+set protocols bgp {{ local_asn }} neighbor {{ name }} ebgp-multihop {{ settings['multihop'] }}
+
+{%-             endif %}
+{%-         endif %}
+{%-         if settings['family'] is defined %}
+{%-             for family_name, family_data in settings['family'].items() %}
+{%-                 if family_data['nhs'] is defined and family_data['nhs'] %}
+
+set protocols bgp {{ local_asn }} neighbor {{ name }} address-family {{ family_name }}-unicast nexthop-self
+
+{%-                 endif %}
+{%-                 if family_data['route_map'] is defined %}
+{%-                     for route_map_name, route_map_data in family_data['route_map'].items() %}
+
+set protocols bgp {{ local_asn }} neighbor {{ name }} address-family {{ family_name }}-unicast route-map {{ route_map_name }} {{ route_map_data }}
+
+{%-                     endfor %}
+{%-                 endif %}
+{%-             endfor %}
+{%-         endif %}
 {%-     endfor %}
 {%- endif %}
 
