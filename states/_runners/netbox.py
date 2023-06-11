@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import logging, copy
 from netaddr   import IPSet
 from ipaddress import ip_interface, ip_network
