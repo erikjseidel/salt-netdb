@@ -13,6 +13,11 @@ set protocols bgp {{ local_asn }} parameters graceful-restart
 set protocols bgp {{ local_asn }} parameters router-id {{ bgp_data['options']['router_id'] }}
 
 {%-     endif %}
+{%-     if 'cluster_id' in bgp_data['options'] %}
+
+set protocols bgp {{ local_asn }} parameters cluster-id {{ bgp_data['options']['cluster_id'] }}
+
+{%-     endif %}
 {%-     if 'log_neighbor_changes' in bgp_data['options'] and bgp_data['options']['log_neighbor_changes'] %}
 
 set protocols bgp {{ local_asn }} parameters log-neighbor-changes
@@ -83,6 +88,11 @@ set protocols bgp {{ local_asn }} peer-group {{ peer_group_name }} ebgp-multihop
 {%-                 if family_data['nhs'] is defined and family_data['nhs'] %}
 
 set protocols bgp {{ local_asn }} peer-group {{ peer_group_name }} address-family {{ family_name }}-unicast nexthop-self
+
+{%-                 endif %}
+{%-                 if family_data['route_reflector'] is defined and family_data['route_reflector'] %}
+
+set protocols bgp {{ local_asn }} peer-group {{ peer_group_name }} address-family {{ family_name }}-unicast route-reflector-client
 
 {%-                 endif %}
 {%-                 if family_data['route_map'] is defined %}
