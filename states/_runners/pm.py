@@ -39,7 +39,27 @@ def generate_direct_sessions():
     return _call_pm_util('generate_direct_sessions')
 
 
-def synchronize_direct_sessions(test=True):
+def generate_ixp_sessions():
+    """
+    Show eBGP IXP session config generated from Peering Manager source 
+    in netdb format.
+
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if data returned; false otherwise
+       * out: a dict of devices in netdb format
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run pm.generate_ixp_sessions
+
+    """
+    return _call_pm_util('generate_ixp_sessions')
+
+
+def synchronize_sessions(test=True):
     """
     Load eBGP config generated from Peering Manager source into netdb.
 
@@ -53,11 +73,11 @@ def synchronize_direct_sessions(test=True):
 
     .. code-block:: bash
 
-        salt-run pm.synchronize_direct_sessions
-        salt-run pm.synchronize_direct_sessions test=false
+        salt-run pm.synchronize_sessions
+        salt-run pm.synchronize_sessions test=false
 
     """
     if not isinstance(test, bool):
         return {"result": False, "comment": "test only accepts true or false."}
 
-    return _call_pm_util('synchronize_direct_sessions', test=test)
+    return _call_pm_util('synchronize_sessions', test=test)
