@@ -13,10 +13,10 @@ def __virtual__():
     return __virtualname__
 
 
-def _call_pm_util(function, data=None, params=None, test=True):
+def _call_pm_util(function, data=None, params=None, method='GET', test=True):
     endpoint = _PM_UTIL_NAME + '/' + function
 
-    return __utils__['netdb_runner.call_netdb_util'](endpoint, data=data, params=params, test=test)
+    return __utils__['netdb_runner.call_netdb_util'](endpoint, data=data, params=params, method=method, test=test)
 
 
 def generate_direct_sessions():
@@ -81,3 +81,57 @@ def synchronize_sessions(test=True):
         return {"result": False, "comment": "test only accepts true or false."}
 
     return _call_pm_util('synchronize_sessions', test=test)
+
+
+def set_maintenance(device, neighbor):
+    """
+    Set a Peering Manager session to maintenance and synchronize netdb.
+
+    :param device: the device where session is located.
+    :param neighbor: the neighbor IP address of the session.
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if successful; false otherwise
+       * out: a dict of synchronization results
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run pm.set_maintenance sin2 169.254.169.254
+
+    """
+    params = {
+            'device' : device.upper(),
+            'ip'     : neighbor,
+            'status' : 'maintenance',
+            }
+
+    return _call_pm_util('set_status', params=params, method='PUT')
+
+
+def set_enabled(device, neighbor):
+    """
+    Set a Peering Manager session to enabled and synchronize netdb.
+
+    :param device: the device where session is located.
+    :param neighbor: the neighbor IP address of the session.
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if successful; false otherwise
+       * out: a dict of synchronization results
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run pm.set_enabled sin2 169.254.169.254
+
+    """
+    params = {
+            'device' : device.upper(),
+            'ip'     : neighbor,
+            'status' : 'enabled',
+            }
+
+    return _call_pm_util('set_status', params=params, method='PUT')
