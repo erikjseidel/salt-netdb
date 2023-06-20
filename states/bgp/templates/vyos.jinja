@@ -90,6 +90,11 @@ set protocols bgp {{ local_asn }} peer-group {{ peer_group_name }} ebgp-multihop
 set protocols bgp {{ local_asn }} peer-group {{ peer_group_name }} address-family {{ family_name }}-unicast nexthop-self
 
 {%-                 endif %}
+{%-                 if family_data['max_prefixes'] is defined %}
+
+set protocols bgp {{ local_asn }} peer-group {{ peer_group_name }} address-family {{ family_name }}-unicast maximum-prefix {{ family_data['max_prefixes'] }}
+
+{%-                 endif %}
 {%-                 if family_data['route_reflector'] is defined and family_data['route_reflector'] %}
 
 set protocols bgp {{ local_asn }} peer-group {{ peer_group_name }} address-family {{ family_name }}-unicast route-reflector-client
@@ -154,6 +159,11 @@ set protocols bgp {{ local_asn }} neighbor {{ name }} ebgp-multihop {{ settings[
 {%-                 if family_data['nhs'] is defined and family_data['nhs'] %}
 
 set protocols bgp {{ local_asn }} neighbor {{ name }} address-family {{ family_name }}-unicast nexthop-self
+
+{%-                 endif %}
+{%-                 if family_data['max_prefixes'] is defined %}
+
+set protocols bgp {{ local_asn }} neighbor {{ name }} address-family {{ family_name }}-unicast maximum-prefix {{ family_data['max_prefixes'] }}
 
 {%-                 endif %}
 {%-                 if family_data['route_map'] is defined %}
