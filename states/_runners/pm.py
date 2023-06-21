@@ -135,3 +135,36 @@ def set_enabled(device, neighbor):
             }
 
     return _call_pm_util('set_status', params=params, method='PUT')
+
+
+def create_policy(name, type, family, weight=None, comment=None):
+    """
+    Add a new policy to peering manager.
+
+    :param name: the name of the new policy.
+    :param type: policy type (i.e. import, export or both).
+    :param family: policy family (i.e. ipv4, ipv6 or both).
+    :param weight: PM policy weight
+    :param comment: PM policy comment
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if successful; false otherwise
+       * out: a dict of synchronization results
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run pm.create_policy 6-NEW-POLICY-IN import ipv6
+        salt-run pm.create_policy 4-NEW-POLICY-OUT export ipv4 comment="new policy"
+
+    """
+    data = {
+            'name'    : name,
+            'type'    : type,
+            'family'  : family,
+            'weight'  : weight,
+            'comment' : comment,
+            }
+
+    return _call_pm_util('create_policy', data=data, method='POST')
