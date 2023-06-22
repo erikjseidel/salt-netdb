@@ -38,7 +38,7 @@ def generate_devices():
     return _call_netbox_util('generate_devices')
 
 
-def generate_interfaces(device):
+def generate_interfaces():
     """
     Show interfaces generated from Netbox source in netdb format for a device.
 
@@ -55,11 +55,7 @@ def generate_interfaces(device):
         salt-run netbox.generate_interfaces sin1
 
     """
-    data = { "device": device }
-
-    ret = _call_netbox_util('generate_interfaces', data)
-
-    return ret
+    return _call_netbox_util('generate_interfaces')
 
 
 def generate_isis():
@@ -123,7 +119,7 @@ def synchronize_devices(test=True):
     return _call_netbox_util('synchronize_devices', test=test)
 
 
-def synchronize_interfaces(devices, test=True):
+def synchronize_interfaces(test=True):
     """
     Load interfaces generated from Netbox source into netdb for a device.
 
@@ -138,17 +134,13 @@ def synchronize_interfaces(devices, test=True):
 
     .. code-block:: bash
 
-        salt-run netbox.synchronize_interfaces sin1
+        salt-run netbox.synchronize_interfaces
 
     """
     if not isinstance(test, bool):
         return {"result": False, "comment": "test only accepts true or false."}
 
-    devs = devices.split(',')
-
-    data = { "devices": devs }
-
-    return _call_netbox_util('synchronize_interfaces', data, test=test)
+    return _call_netbox_util('synchronize_interfaces', test=test)
 
 
 def synchronize_isis(test=True):

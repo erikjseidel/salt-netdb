@@ -283,14 +283,16 @@ def summary(family='both'):
 
     disabled_peers = _get_disabled_peers()['out']
 
+    peer_fmt = "{0:30} {1:20} {2:20}"
     peer_list = []
     for peer, peer_data in peers.items():
         if family == 'both' or family in peer_data['families']:
-            data = "{0:30} {1:20}".format(peer, peer_data.get('peer_group', '') )
+            data = peer_fmt.format(peer, peer_data.get('peer_group', ''), peer_data.get('datasource','') )
             if peer in disabled_peers:
                 data += "\t[disabled]"
             peer_list.append(data)
 
-    ret['comment'] = "salt managed peers:\n--- \n" + '\n'.join( peer_list  )
+    comment_base= peer_fmt.format("salt managed peers", "peer_group", "datasource" ) + "\n---\n"
+    ret['comment'] = comment_base + '\n'.join( peer_list  )
 
     return ret
