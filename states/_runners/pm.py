@@ -168,3 +168,84 @@ def create_policy(name, type, family, weight=None, comment=None):
             }
 
     return _call_pm_util('create_policy', data=data, method='POST')
+
+
+def delete_policy(name):
+    """
+    Delete a policy in peering manager.
+
+    :param name: the name of the policy.
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if successful; false otherwise
+       * out: a dict of synchronization results
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run pm.delete_policy 6-NEW-POLICY-IN
+
+    """
+    params = {
+            'name': name,
+            }
+
+    return _call_pm_util('delete_policy', params=params, method='DELETE')
+
+
+def create_asn(asn, name, comment=None, ipv4_prefix_limit=None, ipv6_prefix_limit=None):
+    """
+    Add a new policy to peering manager.
+
+    :param asn: the autonomous system number.
+    :param name: the name of the ASN.
+    :param comment: PM policy comment
+    :param ipv4_prefix_limit: IPv4 prefix limit
+    :param ipv6_prefix_limit: IPv6 prefix limit
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if successful; false otherwise
+       * out: a dict of synchronization results
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run pm.create_asn 13335 Cloudflare "Cloudflare ASN"
+        salt-run pm.create_asn 13335 Cloudflare ipv4_prefix_limit=10000
+
+    """
+    data = {
+            'asn'     : asn,
+            'name'    : name,
+            'comment' : comment,
+            'ipv4_prefix_limit' : ipv4_prefix_limit,
+            'ipv6_prefix_limit' : ipv6_prefix_limit,
+            }
+
+    return _call_pm_util('create_asn', data=data, method='POST')
+
+
+def peeringdb_sync_asn(asn):
+    """
+    Synchronize an ASN on Peering Manager from Peeringdb
+
+    :param asn: the autonomous system number.
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if successful; false otherwise
+       * out: a dict of synchronization results
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run pm.peeringdb_sync_asn 13335
+
+    """
+    params = {
+            'asn': asn,
+            }
+
+    return _call_pm_util('peeringdb_asn_sync', params=params, method='POST')
