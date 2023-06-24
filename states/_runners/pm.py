@@ -254,7 +254,7 @@ def peeringdb_sync_asn(asn):
 def add_direct_session(device, peer_ip, asn, import_policy=None, export_policy=None, local_ip=None,
                           type='transit-session', comment=None, ttl=None, status=None, local_asn=36198):
     """
-    Add a new policy to peering manager.
+    Add a new direct (i.e. non-IXP) eBGP session to peering manager.
 
     :param device: device where session will be installed
     :param peer_ip: IP address of eBGP peer
