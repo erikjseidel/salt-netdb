@@ -276,7 +276,7 @@ def add_direct_session(device, peer_ip, asn, import_policy=None, export_policy=N
 
     .. code-block:: bash
 
-        salt-run pm.add_direct_session mci3 181.23.71.85  20473 4-VULTR-IN 4-VULTR-OUT
+        salt-run pm.add_direct_session mci3 181.23.71.85 20473 4-VULTR-IN 4-VULTR-OUT
         salt-run pm.add_direct_session mci3 169.254.169.254 64515 4-VULTR-IN 4-VULTR-OUT ttl=2 local_ip=139.180.130.102
 
     """
