@@ -249,3 +249,49 @@ def peeringdb_sync_asn(asn):
             }
 
     return _call_pm_util('peeringdb_asn_sync', params=params, method='POST')
+
+
+def add_direct_session(device, peer_ip, asn, import_policy=None, export_policy=None, local_ip=None,
+                          type='transit-session', comment=None, ttl=None, status=None, local_asn=36198):
+    """
+    Add a new policy to peering manager.
+
+    :param device: device where session will be installed
+    :param peer_ip: IP address of eBGP peer
+    :param asn: the autonomous system number.
+    :param import_policy: Import policy (route-map) for the session
+    :param export_policy: Export policy (route-map) for the session
+    :param local_ip: Source IP address for BGP session
+    :param type: Session type (e.g. transit-session or peering-session)
+    :param comment: PM session comment
+    :param ttl: eBGP multihop ttl
+    :param status: Session status (i.e. enabled, disabled, or maintenance)
+    :param local_asn: Local ASN (should normally be 36198, which is default)
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if successful; false otherwise
+       * out: a dict of synchronization results
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run pm.add_direct_session mci3 181.23.71.85  20473 4-VULTR-IN 4-VULTR-OUT
+        salt-run pm.add_direct_session mci3 169.254.169.254 64515 4-VULTR-IN 4-VULTR-OUT ttl=2 local_ip=139.180.130.102
+
+    """
+    data = {
+            'device'    : device.upper(),
+            'remote_ip' : peer_ip,
+            'local_ip'  : local_ip,
+            'peer_asn'  : asn,
+            'import'    : import_policy,
+            'export'    : export_policy,
+            'type'      : type,
+            'comment'   : comment,
+            'ttl'       : ttl,
+            'status'    : status,
+            'local_asn' : local_asn,
+            }
+
+    return _call_pm_util('create_direct_session', data=data, method='POST')
