@@ -297,6 +297,48 @@ def add_direct_session(device, peer_ip, asn, import_policy=None, export_policy=N
     return _call_pm_util('create_direct_session', data=data, method='POST')
 
 
+def update_direct_session(device, peer_ip, import_policy=None, export_policy=None,
+                                 local_ip=None,  comment=None, ttl=None, status=None):
+    """
+    Add a new direct (i.e. non-IXP) eBGP session to peering manager. An input
+    of '0' means empty (e.g. import_policy=0 will clear the import policy).
+
+    :param device: device where session will be installed
+    :param peer_ip: IP address of eBGP peer
+    :param import_policy: Import policy (route-map) for the session
+    :param export_policy: Export policy (route-map) for the session
+    :param local_ip: Source IP address for BGP session
+    :param comment: PM session comment
+    :param ttl: eBGP multihop ttl
+    :param status: Session status (i.e. enabled, disabled, or maintenance)
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if successful; false otherwise
+       * out: a dict of synchronization results
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run pm.update_direct_session mci3 181.23.71.85 export_policy=4-VULTR-OUT
+        salt-run pm.update_direct_session mci3 181.23.71.85 import_policy=0
+        salt-run pm.update_direct_session mci3 169.254.169.254 comment="Vultr Session" ttl=2
+
+    """
+    data = {
+            'device'    : device.upper(),
+            'remote_ip' : peer_ip,
+            'local_ip'  : local_ip,
+            'import'    : import_policy,
+            'export'    : export_policy,
+            'comment'   : comment,
+            'ttl'       : ttl,
+            'status'    : status,
+            }
+
+    return _call_pm_util('update_direct_session', data=data, method='PUT')
+
+
 def delete_direct_session(device, neighbor):
     """
     Delete a direct session in peering manager and
