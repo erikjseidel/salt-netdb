@@ -295,3 +295,30 @@ def add_direct_session(device, peer_ip, asn, import_policy=None, export_policy=N
             }
 
     return _call_pm_util('create_direct_session', data=data, method='POST')
+
+
+def delete_direct_session(device, neighbor):
+    """
+    Delete a direct session in peering manager and
+    synchronize netdb.
+
+    :param device: the device where session is located.
+    :param neighbor: the neighbor IP address of the session.
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if successful; false otherwise
+       * out: a dict of synchronization results
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run pm.delete_direct_session mci3 169.254.169.254
+
+    """
+    params = {
+            'device' : device.upper(),
+            'ip'     : neighbor,
+            }
+
+    return _call_pm_util('delete_direct_session', params=params, method='DELETE')
