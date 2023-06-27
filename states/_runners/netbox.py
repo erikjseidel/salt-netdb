@@ -199,7 +199,7 @@ def update_ptrs(test=True):
     :return: a dictionary consisting of the following keys:
 
        * result: (bool) True if successful; false otherwise
-       * out: a dict of synchronization results
+       * out: a dict of script run results
 
     CLI Example::
 
@@ -224,7 +224,7 @@ def update_iface_descriptions(test=True):
     :return: a dictionary consisting of the following keys:
 
        * result: (bool) True if successful; false otherwise
-       * out: a dict of synchronization results
+       * out: a dict of script run results
 
     CLI Example::
 
@@ -249,7 +249,7 @@ def renumber(ipv4, ipv6, test=True):
     :return: a dictionary consisting of the following keys:
 
        * result: (bool) True if successful; false otherwise
-       * out: a dict of synchronization results
+       * out: a dict of script run results
 
     CLI Example::
 
@@ -278,7 +278,7 @@ def prune_ips(test=True):
     :return: a dictionary consisting of the following keys:
 
        * result: (bool) True if successful; false otherwise
-       * out: a dict of synchronization results
+       * out: a dict of script run results
 
     CLI Example::
 
@@ -292,3 +292,46 @@ def prune_ips(test=True):
         return {"result": False, "comment": "test only accepts true or false."}
 
     return _call_netbox_util('prune_ips', test=test)
+
+
+def add_pni(device, interface, vlan_id=None, autogen_ips=False, ipv4=None, ipv6=None, test=True):
+    """
+    Trigger the Netbox add_pni (create a new PNI) script. Creates new IPs on the
+    interface as well. Sub-interfaces for VLAN tagged PNIs will be dynamically
+    created.
+
+    :param device: Device where PNI is located
+    :param interface: Interface name of the PNI
+    :param vlan_id: 802.1Q VLAN tag (if any)
+    :param autogen_ips: Automatically assign IPv4 /31 and IPv6 /127 from PNI IP pool
+    :param ipv4: Manually assign IPv4 address (not used if autogen_ips set)
+    :param ipv6: Manually assign IPv6 address (not used if autogen_ips set)
+    :param test: Commit changes to Netbox if false, only do a dry run if true.
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if successful; false otherwise
+       * out: a dict of script run results
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt-run netbox.add_pni sin1 eth5 vlan_id=650 autogen_ips=false test=false
+        salt-run netbox.add_pni sin1 eth5 ipv4=23.181.24.96/31 ipv6=2620:136:a009:df99::2/127
+
+    """
+    if not isinstance(test, bool):
+        return {"result": False, "comment": "test only accepts true or false."}
+
+    data = {
+            'device'      : device.upper(),
+            'interface'   : interface,
+            'vlan_id'     : vlan_id,
+            'autogen_ips' : autogen_ips,
+            'my_ipv4'     : ipv4,
+            'my_ipv6'     : ipv6,
+            }
+
+    data = { k : v for k, v in data.items() if v }
+
+    return _call_netbox_util('add_pni', data=data, test=test)
