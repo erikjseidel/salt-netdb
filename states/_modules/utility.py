@@ -71,18 +71,75 @@ def ping_test(dst_ip, src_ip, count, threshold):
                 'comment' : ' Invalid ping result',
                 }
 
-    success = False
-    if float(loss[:-1]) < threshold:
-        success = True
-
     out = {
             'output' : ret['out'],
             'loss'   : loss,
-            'pass'   : success,
+            'pass'   : ( float(loss[:-1]) < threshold ),
             }
 
     return {
             'result'  : True,
             'out'     : out,
             'comment' : 'Ping test results'
+            }
+
+
+def bgp_session_check(neighbor_ip):
+    """
+    Check the state of a BGP session.
+
+    :param neighbor_ip: Neighbour IP address
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if session check completes; false otherwise
+       * out: Test result and details
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt sin2 utility.bgp_session_check 23.181.64.98
+
+    """
+    name = 'bg_session_check'
+
+    okay = True
+    result = { 'result' : False }
+
+    try:
+        family = 'ipv6' if IPAddress(neighbor_ip).version == 6 else 'ip'
+
+    except AddrFormatError:
+        okay = False
+        result['comment'] = 'invalid IP address input'
+
+    if not okay:
+        return result
+
+    command = f'show {family} bgp neighbor {neighbor_ip} | match "BGP state"'
+
+    ret = __salt__['net.cli'](command)
+    if not ret['result']:
+        return ret
+
+    p = ret['out'][command]
+    if p:
+        state = p.split(',')[0].split(' = ')[1].upper()
+    else:
+        return {
+                'result'  : False,
+                'out'     : ret['out'],
+                'comment' : 'BGP session not found',
+                }
+
+    out = {
+            'output'      : ret['out'],
+            'state'       : state,
+            'established' : (state == 'ESTABLISHED'),
+            }
+
+    return {
+            'result'  : True,
+            'out'     : out,
+            'comment' : 'BGP session check results'
             }
