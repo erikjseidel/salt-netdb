@@ -335,3 +335,70 @@ def display(type='ethernet'):
         ret['comment'] = "netdb API is down"
 
     return ret
+
+
+def apply_pni(interfaces, test=False, debug=False):
+    """
+    Apply a single interface to device. Uses same template as state.apply ethernet
+
+    :param interfaces: comma separated list of interfaces to apply
+    :param test: True for dry-run. False to apply on the router.
+    :param debug: True to show additional debugging information
+    :return: a dictionary consisting of the following keys:
+
+       * result: (bool) True if interfaces found in column and applied; false otherwise
+       * comment: (str) An explanation of the result
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt sin1 ethernet.apply_pni eth5,eth6 test=True
+        salt sin1 ethernet.apply_pni interfaces=eth5,eth6
+        salt sin1 ethernet.apply_pni eth6
+
+    """
+    name = 'apply_pni'
+
+    ret = {'result' : False}
+
+    if not isinstance(test, bool):
+        return {"result": False, "comment": "test option only accepts true or false."}
+
+    if not isinstance(debug, bool):
+        return {"result": False, "comment": "debug option only accepts true or false."}
+
+
+    ethernet = generate()
+
+    interfaces = interfaces.split(',')
+
+    pni = { 'comment' : 'generated interfaces', 'result' : False }
+
+    for iface, data in ethernet['out'].items():
+        if iface in interfaces:
+            if not pni.get('out'):
+                pni['out'] = {}
+                pni['result'] = True
+            pni['out'][iface] = data
+            interfaces.remove(iface)
+
+    if interfaces:
+        return {
+                'result'  : False,
+                'out'     : interfaces,
+                'comment' : 'Interfaces not found',
+                }
+
+    if pni['result']:
+        ret.update(
+            __salt__['net.load_template'](
+                'salt://ethernet/templates/vyos.jinja',
+                test=test,
+                debug=debug,
+                commit_comment = "Apply interfaces",
+                data=pni,
+            )
+        )
+
+    return ret

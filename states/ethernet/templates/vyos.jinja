@@ -73,6 +73,18 @@ set interfaces {{ iface_data['vlan']['parent_vyos_type'] }} {{ iface_data['vlan'
 {%-         endfor %}
 {%-     endif %}
 
+{%-     if ( iface_data['disabled'] ) %}
+{%-         if vyos_type in ['bonding', 'ethernet'] %}
+
+set interfaces {{ vyos_type }} {{ interface }} disable
+
+{%-         else %}
+
+set interfaces {{ iface_data['vlan']['parent_vyos_type'] }} {{ iface_data['vlan']['parent'] }} vif {{ iface_data['vlan']['id'] }} disable
+
+{%-         endif %}
+{%-     endif %}
+
 {%-     if iface_data['policy'] is defined %}
 {%-         for family, policy in iface_data['policy'].items() %}
 {%-             set header = '' %}
