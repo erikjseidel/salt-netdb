@@ -321,19 +321,19 @@ def display(type='ethernet'):
     
     disabled_ifaces = _get_disabled_interfaces()['out']
 
-    iface_fmt = "{0:30} {1:20}"
+    iface_fmt = "{0:30} {1:20} {2:20}"
     if ret_ifaces['result']:
-        ifaces = ret_ifaces['out'].keys()
+        ifaces = ret_ifaces['out']
         iface_list = []
-        for interface in ifaces:
+        for interface, iface_data in ifaces.items():
             disabled = ''
             if interface in disabled_ifaces:
                 disabled += "disabled"
 
-            data = iface_fmt.format(interface, disabled)
+            data = iface_fmt.format(interface, iface_data.get('datasource'), disabled)
             iface_list.append(data)
 
-        comment_base= iface_fmt.format("salt managed interfaces", "status" ) + "\n---\n"
+        comment_base= iface_fmt.format("salt managed interfaces", "datasource", "" ) + "\n---\n"
         ret['comment'] = comment_base + '\n'.join( iface_list )
     else:
         ret['comment'] = "netdb API is down"
