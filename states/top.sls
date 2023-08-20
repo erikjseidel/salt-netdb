@@ -1,4 +1,8 @@
 base:
+  'sin*':
+    - policy
+  'G@cvars:iso':
+    - isis
   '*':
     - bgp
 #    - isis
@@ -7,7 +11,3 @@ base:
     - tunnels
     - ethernet
     - loopback
-  'sin*':
-    - policy
-  'G@cvars:iso':
-    - isis
