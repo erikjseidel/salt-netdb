@@ -38,9 +38,11 @@ set protocols bgp {{ local_asn }} timers keepalive {{ bgp_data['options']['keepa
 {%-     for family_name, family_data in bgp_data['address_family'].items() %}
 {%-         if family_data['networks'] is defined %}
 {%-             for network_name, network_data in family_data['networks'].items() %}
+{%-                 if network_name not in ['datasource', 'weight'] %}
 
 set protocols bgp {{ local_asn }} address-family {{ family_name }}-unicast network {{ network_name }}
 
+{%-                 endif %}
 {%-             endfor %}
 {%-         endif %}
 {%-         if family_data['redistribute'] is defined %}

@@ -7,9 +7,11 @@ delete zone-policy
 
 {%- if ( fw_data['options'] is defined ) %}
 {%-     for option, value in fw_data['options'].items() %}
+{%-         if option not in ['datasource', 'weight'] %}
 
 set firewall {{ option }} {{ value }}
 
+{%-         endif %}
 {%-     endfor %}
 {%- endif %}
 {%- if ( fw_data['state_policy'] is defined ) %}
