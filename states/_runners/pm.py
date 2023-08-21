@@ -59,28 +59,30 @@ def generate_ixp_sessions():
     return _call_pm_util('generate_ixp_sessions')
 
 
-def synchronize_sessions(test=True):
+def reload_bgp(verbose=False):
     """
-    Load eBGP config generated from Peering Manager source into netdb.
+    Clear all Peering Manager data from netdb bgp column and load
+    a fresh version from Peering Manager.
 
-    :param test: Synchonize all devices if false, only do a dry run if true.
+    :param verbose: show generated column data as well
     :return: a dictionary consisting of the following keys:
 
-       * result: (bool) True if successful; false otherwise
-       * out: a dict of synchronization results
+       * result: (bool) True if data returned; false otherwise
+       * out: a dict of BGP data in netdb format
 
     CLI Example::
 
     .. code-block:: bash
 
-        salt-run pm.synchronize_sessions
-        salt-run pm.synchronize_sessions test=false
+        salt-run pm.reload_bgp
 
     """
-    if not isinstance(test, bool):
-        return {"result": False, "comment": "test only accepts true or false."}
+    ret = _call_pm_util('reload_ebgp', method='POST')
 
-    return _call_pm_util('synchronize_sessions', test=test)
+    if ret['result'] and not ret['error'] and not verbose:
+        return { 'result': True }
+
+    return ret
 
 
 def set_maintenance(device, neighbor):
