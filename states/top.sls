@@ -1,6 +1,8 @@
 base:
   'sin*':
     - policy
+  aus4:
+    - policy
   'G@cvars:iso':
     - isis
   '*':
