@@ -13,10 +13,10 @@ def __virtual__():
     return __virtualname__
 
 
-def _call_netbox_util(function, data=None, params=None, test=True):
+def _call_netbox_util(function, data=None, params=None, method='GET', test=True):
     endpoint = _NETBOX_UTIL_NAME + '/' + function
 
-    return __utils__['netdb_runner.call_netdb_util'](endpoint, data=data, params=params, test=test)
+    return __utils__['netdb_runner.call_netdb_util'](endpoint, data=data, params=params, method=method, test=test)
 
 
 def generate_devices():
@@ -96,99 +96,108 @@ def generate_ebgp():
     return _call_netbox_util('generate_ebgp')
 
 
-def synchronize_devices(test=True):
+def reload_devices(verbose=False):
     """
-    Load devices generated from Netbox source into netdb.
+    Clear all Netbox data from netdb device column and load
+    a fresh version from Netbox
 
-    :param test: Synchonize devices if false, only do a dry run if true.
+    :param verbose: show generated column data as well
     :return: a dictionary consisting of the following keys:
 
-       * result: (bool) True if successful; false otherwise
-       * out: a dict of synchronization results
+       * result: (bool) True if data returned; false otherwise
+       * out: a dict of devices in netdb format
 
     CLI Example::
 
     .. code-block:: bash
 
-        salt-run netbox.synchronize_devices
+        salt-run netbox.reload_devices
 
     """
-    if not isinstance(test, bool):
-        return {"result": False, "comment": "test only accepts true or false."}
+    ret = _call_netbox_util('reload_devices', method='POST')
 
-    return _call_netbox_util('synchronize_devices', test=test)
+    if ret['result'] and not ret['error'] and not verbose:
+        return { 'result': True }
+
+    return ret
 
 
-def synchronize_interfaces(test=True):
+def reload_interfaces(verbose=False):
     """
-    Load interfaces generated from Netbox source into netdb for a device.
+    Clear all Netbox data from netdb interface column and load
+    a fresh version from Netbox
 
-    :param devices: Comma separated list of devices be updated.
-    :param test: Synchonize interfaces if false, only do a dry run if true.
+    :param verbose: show generated column data as well
     :return: a dictionary consisting of the following keys:
 
-       * result: (bool) True if successful; false otherwise
-       * out: a dict of synchronization results
+       * result: (bool) True if data returned; false otherwise
+       * out: a dict of interfaces in netdb format
 
     CLI Example::
 
     .. code-block:: bash
 
-        salt-run netbox.synchronize_interfaces
+        salt-run netbox.reload_interfaces
 
     """
-    if not isinstance(test, bool):
-        return {"result": False, "comment": "test only accepts true or false."}
+    ret = _call_netbox_util('reload_interfaces', method='POST')
 
-    return _call_netbox_util('synchronize_interfaces', test=test)
+    if ret['result'] and not ret['error'] and not verbose:
+        return { 'result': True }
+
+    return ret
 
 
-def synchronize_isis(test=True):
+def reload_isis(verbose=False):
     """
-    Load IS-IS config generated from Netbox source into netdb.
+    Clear all Netbox data from netdb bgp column and load
+    a fresh version from Netbox
 
-    :param test: Synchonize all devices if false, only do a dry run if true.
+    :param verbose: show generated column data as well
     :return: a dictionary consisting of the following keys:
 
-       * result: (bool) True if successful; false otherwise
-       * out: a dict of synchronization results
+       * result: (bool) True if data returned; false otherwise
+       * out: a dict of IS-IS data in netdb format
 
     CLI Example::
 
     .. code-block:: bash
 
-        salt-run netbox.synchronize_isis
-        salt-run netbox.synchronize_isis test=false
+        salt-run netbox.reload_isis
 
     """
-    if not isinstance(test, bool):
-        return {"result": False, "comment": "test only accepts true or false."}
+    ret = _call_netbox_util('reload_igp', method='POST')
 
-    return _call_netbox_util('synchronize_igp', test=test)
+    if ret['result'] and not ret['error'] and not verbose:
+        return { 'result': True }
+
+    return ret
 
 
-def synchronize_ebgp(test=True):
+def reload_bgp(verbose=False):
     """
-    Load internal eBGP config generated from Netbox source into netdb.
+    Clear all Netbox data from netdb bgp column and load
+    a fresh version from Netbox
 
-    :param test: Synchonize all devices if false, only do a dry run if true.
+    :param verbose: show generated column data as well
     :return: a dictionary consisting of the following keys:
 
-       * result: (bool) True if successful; false otherwise
-       * out: a dict of synchronization results
+       * result: (bool) True if data returned; false otherwise
+       * out: a dict of BGP data in netdb format
 
     CLI Example::
 
     .. code-block:: bash
 
-        salt-run netbox.synchronize_ebgp
-        salt-run netbox.synchronize_ebgp test=false
+        salt-run netbox.reload_bgp
 
     """
-    if not isinstance(test, bool):
-        return {"result": False, "comment": "test only accepts true or false."}
+    ret = _call_netbox_util('reload_ebgp', method='POST')
 
-    return _call_netbox_util('synchronize_ebgp', test=test)
+    if ret['result'] and not ret['error'] and not verbose:
+        return { 'result': True }
+
+    return ret
 
 
 def update_ptrs(test=True):
