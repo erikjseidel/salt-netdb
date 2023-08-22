@@ -1,15 +1,10 @@
 base:
-  'sin*':
-    - policy
-  aus4:
-    - policy
-  'G@cvars:iso':
-    - isis
   '*':
     - bgp
-#    - isis
-#    - policy
+    - policy
     - firewall
     - tunnels
     - ethernet
     - loopback
+  'G@cvars:iso':
+    - isis
