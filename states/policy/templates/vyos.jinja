@@ -1,8 +1,62 @@
 {%- set policy_data = data['out'] %}
 
+delete policy as-path-list
+delete policy community-list
 delete policy prefix-list
 delete policy prefix-list6
 delete policy route-map
+
+{%- if ( policy_data['aspath_lists'] is defined ) %}
+{%-     for aspath_list, aspath_list_data in policy_data['aspath_lists'].items() %}
+{%-         if ( aspath_list_data['rules'] is defined ) %}
+{%-             for rule in aspath_list_data['rules'] %}
+{%-                 if ( rule['action'] is defined ) %}
+
+set policy as-path-list {{ aspath_list }} rule {{ loop.index * 10 }} action {{ rule['action'] }}
+
+{%-                 else %}
+
+set policy as-path-list {{ aspath_list }} rule {{ loop.index * 10 }} action permit
+
+{%-                 endif %}
+{%-                 if ( rule['description'] is defined ) %}
+
+set policy as-path-list {{ aspath_list }} rule {{ loop.index * 10 }} description "{{ rule['description'] }}"
+
+{%-                 endif %}
+
+set policy as-path-list {{ aspath_list }} rule {{ loop.index * 10 }} regex {{ rule['regex'] }}
+
+{%-             endfor %}
+{%-         endif %}
+{%-     endfor %}
+{%- endif %}
+
+{%- if ( policy_data['community_lists'] is defined ) %}
+{%-     for community_list, community_list_data in policy_data['community_lists'].items() %}
+{%-         if ( community_list_data['rules'] is defined ) %}
+{%-             for rule in community_list_data['rules'] %}
+{%-                 if ( rule['action'] is defined ) %}
+
+set policy community-list {{ community_list }} rule {{ loop.index * 10 }} action {{ rule['action'] }}
+
+{%-                 else %}
+
+set policy community-list {{ community_list }} rule {{ loop.index * 10 }} action permit
+
+{%-                 endif %}
+{%-                 if ( rule['description'] is defined ) %}
+
+set policy community-list {{ community_list }} rule {{ loop.index * 10 }} description "{{ rule['description'] }}"
+
+{%-                 endif %}
+
+set policy community-list {{ community_list }} rule {{ loop.index * 10 }} regex {{ rule['regex'] }}
+
+{%-             endfor %}
+{%-         endif %}
+{%-     endfor %}
+{%- endif %}
 
 {%- if ( policy_data['prefix_lists'] is defined ) %}
 {%-     for family in policy_data['prefix_lists'] %}
@@ -40,6 +94,7 @@ set policy prefix-list{{ suffix }} {{ prefix_list }} rule {{ loop.index * 5 }} p
 {%-         endfor %}
 {%-     endfor %}
 {%- endif %}
+
 {%- if ( policy_data['route_maps'] is defined ) %}
 {%-     for family in policy_data['route_maps'] %}
 {%-         set suffix = '' %}
@@ -118,4 +173,4 @@ set policy route-map {{ route_map }} rule {{ rule['number'] }} set {{ vyos_famil
 {%-     endfor %}
 {%- endif %}
 
-comment policy 'The following policy nodes are SALT MANAGED: prefix-list, prefix-list6, route-map'
+comment policy 'The following policy nodes are SALT MANAGED: as-path-list, community-list, prefix-list, prefix-list6, route-map'
