@@ -1,7 +1,7 @@
 # salt-netdb
 Salt automations for use with netdb. This requires the netdb package which can be found here:
 
-https://github.com/erikjseidel/salt-netdb
+https://github.com/erikjseidel/netdb
 
 It also requires redis-server be installed. This has been written for VyOS 1.3. Other target systems
 (such as Junos) would require further modification to this package. This package is mainly intended for
