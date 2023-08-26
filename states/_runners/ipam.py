@@ -22,7 +22,7 @@ def __virtual__():
 def _call_ipam_util(function, data, out=True, comment=True):
     endpoint = _IPAM_UTIL_NAME + '/' + function
 
-    ret = __utils__['netdb_runner.call_netdb_util'](endpoint, data = data)
+    ret = __utils__['netdb_util.call_netdb_util'](endpoint, data = data)
 
     if not out:
         ret.pop('out', None)

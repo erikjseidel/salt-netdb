@@ -17,7 +17,7 @@ def __virtual__():
 def _call_cfdns_util(function, data=None, method='GET', test=True):
     endpoint = _CFDNS_UTIL_NAME + '/' + function
 
-    return __utils__['netdb_runner.call_netdb_util'](endpoint, data=data, method=method, test=test)
+    return __utils__['netdb_util.call_netdb_util'](endpoint, data=data, method=method, test=test)
 
 
 def synchronize(test=True):

@@ -13,7 +13,7 @@ def __virtual__():
 def _call_repo_yaml_util(function, data=None, params=None, method='GET', test=True):
     endpoint = _REPO_YAML_UTIL_NAME + '/' + function
 
-    return __utils__['netdb_runner.call_netdb_util'](endpoint, data=data, params=params, method=method, test=test)
+    return __utils__['netdb_util.call_netdb_util'](endpoint, data=data, params=params, method=method, test=test)
 
 
 def generate_column(column):
