@@ -19,5 +19,6 @@ base:
     - proxies/mci3
   aus4:
     - proxies/aus4
-#  '*':
+  '*':
 #    - netdb
+     - netdb_local

@@ -17,6 +17,8 @@ def get(column, delimiter=':'):
     Retrieves a column from netdb for the device. Used by column module
     'get', 'items' and 'keys' functions.
     """
+    router = __grains__['node_name']
+
     c = column.split(delimiter)
 
     netdb_answer = get_column(c.pop(0))
@@ -27,7 +29,7 @@ def get(column, delimiter=':'):
                 'error'   : True,
                }
 
-    unwind = netdb_answer['out'].get(__grains__['id'])
+    unwind = netdb_answer['out'].get(router)
     for i in range(0, len(c)):
         unwind = unwind.get(c[i])
         if not isinstance(unwind, dict):
@@ -43,6 +45,7 @@ def pull(column):
     Retrieves a column from netdb for the device. None is returned in case of
     error or no result. Intended for use by salt state apply pipeline.
     """
+    router = __grains__['node_name']
 
     netdb_answer = get_column(column)
 
@@ -55,6 +58,6 @@ def pull(column):
 
     return {
             'comment' : netdb_answer.get('comment'),
-            'out'     : netdb_answer['out'].get(__grains__['id']),
+            'out'     : netdb_answer['out'].get(router),
             'result'  : True,
             }

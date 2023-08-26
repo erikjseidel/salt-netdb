@@ -64,6 +64,7 @@ def get(column, delimiter=':'):
                 }
 
     ret = __utils__['column.get'](column, delimiter)
+
     if not ret or (isinstance(ret, dict) and ret.get('result') == False):
         return []
 

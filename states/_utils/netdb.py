@@ -3,10 +3,15 @@ import json
 
 _PILLAR = 'netdb'
 
-def get_grains(pillar):
-    router = pillar['id'].upper()
+_LOCAL = 'netdb_local'
 
-    url = pillar['url'] + 'device' + '/' + router
+def get_grains(netdb, netdb_local):
+
+    router = netdb['id'].upper()
+
+    url = netdb['url'] + 'device/{}'.format(router)
+    if netdb_local and netdb_local.get('enabled'):
+        url = netdb_local['url'] + 'device/{}'.format(router)
 
     headers = {
         "Content-Type": "application/json",
@@ -14,10 +19,13 @@ def get_grains(pillar):
     }
 
     method = "GET"
-    resp = salt.utils.http.query(
-        url=url, method=method, header_dict=headers, verify_ssl=False,
-        cert = [ pillar['key'], pillar['key'] ]
-    )
+    if netdb_local and netdb_local.get('enabled'):
+        resp = salt.utils.http.query(url=url, method=method, header_dict=headers)
+    else:
+        resp = salt.utils.http.query(
+            url=url, method=method, header_dict=headers, verify_ssl=False,
+            cert = [ pillar['key'], pillar['key'] ]
+        )
 
     if 'body' in resp:
         return json.loads(resp['body'])['out'][router]
@@ -37,10 +45,15 @@ def get_column(column):
        * error: (bool) True if an API error occured (such as connection timeout)
 
     """
-    router = __grains__['id']
+    router = __grains__['node_name']
     netdb = __pillar__[_PILLAR]
+    netdb_local = __pillar__.get(_LOCAL)
 
-    url = netdb['url'] + column + '/' + router + '/config'
+    url = netdb['url']
+    if netdb_local and netdb_local.get('enabled'):
+        url = netdb_local['url']
+
+    url += '{column}/{device}'.format(column=column, device=router)
 
     headers = {
         "Content-Type": "application/json",
@@ -48,10 +61,14 @@ def get_column(column):
     }
 
     method = "GET"
-    resp = salt.utils.http.query(
-        url=url, method=method, header_dict=headers, verify_ssl=False,
-        cert = [ netdb['key'], netdb['key'] ]
-    )
+    if netdb_local and netdb_local.get('enabled'):
+        resp = salt.utils.http.query(url=url, method=method, header_dict=headers)
+    else:
+        resp = salt.utils.http.query(
+            url=url, method=method, header_dict=headers, verify_ssl=False,
+            cert = [ netdb['key'], netdb['key'] ]
+        )
+
 
     if 'body' in resp:
         return json.loads(resp['body'])
@@ -72,7 +89,11 @@ def list_columns():
 
     """
     netdb = __pillar__[_PILLAR]
+    netdb_local = __pillar__.get(_LOCAL)
+
     url = netdb['url'] + 'columns'
+    if netdb_local and netdb_local.get('enabled'):
+        url = netdb_local['url'] + 'columns'
 
     headers = {
         "Content-Type": "application/json",
@@ -80,10 +101,13 @@ def list_columns():
     }
 
     method = "GET"
-    resp = salt.utils.http.query(
-        url=url, method=method, header_dict=headers, verify_ssl=False,
-        cert = [ netdb['key'], netdb['key'] ]
-    )
+    if netdb_local and netdb_local.get('enabled'):
+        resp = salt.utils.http.query(url=url, method=method, header_dict=headers)
+    else:
+        resp = salt.utils.http.query(
+            url=url, method=method, header_dict=headers, verify_ssl=False,
+            cert = [ netdb['key'], netdb['key'] ]
+        ) 
 
     if 'body' in resp:
         return json.loads(resp['body'])

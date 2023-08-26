@@ -12,10 +12,12 @@ def __virtual__():
 
 def netdb_grains():
     if 'netdb' in __pillar__:
-        pillar = __pillar__['netdb']
+        netdb = __pillar__['netdb']
 
-        grains = __utils__['netdb.get_grains'](pillar)
-        grains['id'] = pillar['id']
+        netdb_local = __pillar__.get('netdb_local')
+
+        grains = __utils__['netdb.get_grains'](netdb, netdb_local)
+        grains['id'] = netdb['id']
 
         return grains
 
