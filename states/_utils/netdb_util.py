@@ -22,11 +22,18 @@ def _get_netdb_config():
     return {
         "url":      __opts__["netdb"]["url"],
         "util_url": __opts__["netdb"]["util_url"],
-        "key":      __opts__["netdb"]["key"],
+        "key":      __opts__["netdb"].get("key"),
     }
 
 
 def call_netdb_util(endpoint, data=None, params={}, method='GET', test=True):
+    if method not in ['GET', 'POST', 'PUT', 'DELETE']:
+        return {
+                'result': False,
+                'error': True,
+                'comment': f'Internal runner error: {method} not allowed.'
+                }
+
     if not params:
         params = {}
 
@@ -37,21 +44,24 @@ def call_netdb_util(endpoint, data=None, params={}, method='GET', test=True):
     if not test:
         params['test'] = False
 
-    json = None
-    if data:
-        json = json.dumps(data)
+    key = None
+    if netdb.get('key'):
+        key = netdb['key']
 
-    if method == 'GET':
-        resp = requests.get(url=url, headers=HEADERS, params=params, data=json, verify=False, cert=netdb['key'])
+    verify=False
+    # Keep at default value in case of http.
+    if url.startswith('http://'):
+        verify=True
 
-    elif method == 'POST':
-        resp = requests.post(url=url, headers=HEADERS, params=params, data=json, verify=False, cert=netdb['key'])
-
-    elif method == 'PUT':
-        resp = requests.put(url=url, headers=HEADERS, data=json, verify=False, cert=netdb['key'])
-
-    elif method == 'DELETE':
-        resp = requests.put(url=url, headers=HEADERS, data=json, verify=False, cert=netdb['key'])
+    resp = requests.request(
+            url=url,
+            method=method,
+            headers=HEADERS,
+            params=params,
+            json=data,
+            verify=verify,
+            cert=key
+            )
 
     if resp.status_code in [200, 422]:
         return resp.json()
