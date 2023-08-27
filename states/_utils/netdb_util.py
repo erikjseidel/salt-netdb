@@ -26,30 +26,26 @@ def _get_netdb_config():
     }
 
 
-def call_netdb_util(endpoint, data=None, params=None, method='GET', test=True):
+def call_netdb_util(endpoint, data=None, params={}, method='GET', test=True):
+    if not params:
+        params = {}
+
     netdb = _get_netdb_config()
 
-    url = netdb['util_url'] + endpoint + '?'
+    url = netdb['util_url'] + endpoint
+
     if not test:
-        url += 'test=false&'
-
-    if params:
-        for k, v in params.items():
-            url += f'{k}={v}&' 
-
-    # prettify url
-    if url[-1] in ['?', '&']:
-        url = url[:-1]
+        params['test'] = False
 
     json = None
     if data:
         json = json.dumps(data)
 
     if method == 'GET':
-        resp = requests.get(url=url, headers=HEADERS, data=json, verify=False, cert=netdb['key'])
+        resp = requests.get(url=url, headers=HEADERS, params=params, data=json, verify=False, cert=netdb['key'])
 
     elif method == 'POST':
-        resp = requests.post(url=url, headers=HEADERS, data=json, verify=False, cert=netdb['key'])
+        resp = requests.post(url=url, headers=HEADERS, params=params, data=json, verify=False, cert=netdb['key'])
 
     elif method == 'PUT':
         resp = requests.put(url=url, headers=HEADERS, data=json, verify=False, cert=netdb['key'])
