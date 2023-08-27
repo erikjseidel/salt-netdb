@@ -44,7 +44,7 @@ def get(column, delimiter=':'):
     device:location
 
     delimiter
-        Specify an alternate delimiter to use when traversing a nested dic
+        Specify an alternate delimiter to use when traversing a nested dict
 
     CLI Example::
 
@@ -79,7 +79,7 @@ def keys(column, delimiter=':'):
     for the dict, similar to how column.get works.
 
     delimiter
-        Specify an alternate delimiter to use when traversing a nested dic
+        Specify an alternate delimiter to use when traversing a nested dict
 
     CLI Example::
 
@@ -113,7 +113,7 @@ def item(*arg, **kwarg):
     Return one or more columns from netdb.
 
     delimiter
-        Specify an alternate delimiter to use when traversing a nested dic
+        Specify an alternate delimiter to use when traversing a nested dict
 
     CLI Example::
 
