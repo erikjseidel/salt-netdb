@@ -1,5 +1,4 @@
-import salt.utils.http
-import json
+import requests, json
 
 HEADERS = {
         "Content-Type": "application/json",
@@ -10,9 +9,9 @@ def __virtual__():
     netdb_config = __opts__["netdb"] if "netdb" in __opts__ else None
 
     if netdb_config:
-        url = netdb_config.get("url", None)
+        url = netdb_config.get("util_url", None)
         if not url:
-            return ( False, 'netdb config not loaded' )
+            return ( False, 'netdb util url not found' )
         else:
             return True
 
@@ -38,18 +37,31 @@ def call_netdb_util(endpoint, data=None, params=None, method='GET', test=True):
         for k, v in params.items():
             url += f'{k}={v}&' 
 
-    if data:
-        resp = salt.utils.http.query(
-            url=url, method=method, header_dict=HEADERS, verify_ssl=False, data=json.dumps(data),
-            cert = [ netdb['key'], netdb['key'] ]
-        )
-    else:
-        resp = salt.utils.http.query(
-            url=url, method=method, header_dict=HEADERS, verify_ssl=False,
-            cert = [ netdb['key'], netdb['key'] ]
-        )
+    # prettify url
+    if url[-1] in ['?', '&']:
+        url = url[:-1]
 
-    if 'body' in resp:
-        return json.loads(resp['body'])
+    json = None
+    if data:
+        json = json.dumps(data)
+
+    if method == 'GET':
+        resp = requests.get(url=url, headers=HEADERS, data=json, verify=False, cert=netdb['key'])
+
+    elif method == 'POST':
+        resp = requests.post(url=url, headers=HEADERS, data=json, verify=False, cert=netdb['key'])
+
+    elif method == 'PUT':
+        resp = requests.put(url=url, headers=HEADERS, data=json, verify=False, cert=netdb['key'])
+
+    elif method == 'DELETE':
+        resp = requests.put(url=url, headers=HEADERS, data=json, verify=False, cert=netdb['key'])
+
+    if resp.status_code in [200, 422]:
+        return resp.json()
     else:
-        return { 'result': False, 'error': True, 'comment': 'netdb util api error: ' +  resp['error'] }
+        return {
+                'result': False,
+                'error': True,
+                'comment': f'netdb api error: {resp.status_code} {resp.reason}'
+                }

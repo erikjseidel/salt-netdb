@@ -50,7 +50,7 @@ def get_column(column):
         url = netdb['url'] + endpoint
         resp = requests.get(url=url, headers=HEADERS, verify=False, cert=netdb['key'])
 
-    if resp.status_code == 200:
+    if resp.status_code in [200, 422]:
         return resp.json()
     else:
         return { 
