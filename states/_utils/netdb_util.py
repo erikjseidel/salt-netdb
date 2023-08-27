@@ -27,6 +27,7 @@ def _get_netdb_config():
 
 
 def call_netdb_util(endpoint, data=None, params={}, method='GET', test=True):
+
     if method not in ['GET', 'POST', 'PUT', 'DELETE']:
         return {
                 'result': False,
