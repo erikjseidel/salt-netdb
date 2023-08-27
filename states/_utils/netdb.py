@@ -12,12 +12,18 @@ HEADERS = {
 def get_grains(netdb, netdb_local):
     router = netdb['id'].upper()
 
+    url = netdb['url'] + 'device/{}'.format(router)
+    key = netdb.get('key')
+
     if netdb_local and netdb_local.get('enabled'):
         url = netdb_local['url'] + 'device/{}'.format(router)
-        resp = requests.get(url=url, headers=HEADERS)
-    else:
-        url = netdb['url'] + 'device/{}'.format(router)
-        resp = requests.get(url=url, headers=HEADERS, verify=False, cert=netdb['key'])
+        key = netdb_local.get('key')
+
+    verify = False
+    if url.startswith('http://'):
+        verify = True
+
+    resp = requests.get(url=url, headers=HEADERS, verify=verify, cert=key)
 
     if resp.status_code == 200:
         return resp.json()['out'][router]
@@ -43,12 +49,18 @@ def get_column(column):
 
     endpoint = '{column}/{device}'.format(column=column, device=router)
 
+    url = netdb['url'] + endpoint
+    key = netdb.get('key')
+
     if netdb_local and netdb_local.get('enabled'):
         url = netdb_local['url'] + endpoint
-        resp = requests.get(url=url, headers=HEADERS)
-    else:
-        url = netdb['url'] + endpoint
-        resp = requests.get(url=url, headers=HEADERS, verify=False, cert=netdb['key'])
+        key = netdb_local.get('key')
+
+    verify = False
+    if url.startswith('http://'):
+        verify = True
+
+    resp = requests.get(url=url, headers=HEADERS, verify=verify, cert=key)
 
     if resp.status_code in [200, 422]:
         return resp.json()
@@ -75,12 +87,18 @@ def list_columns():
     netdb = __pillar__[_PILLAR]
     netdb_local = __pillar__.get(_LOCAL)
 
+    url = netdb['url'] + 'columns'
+    key = netdb.get('key')
+
     if netdb_local and netdb_local.get('enabled'):
         url = netdb_local['url'] + 'columns'
-        resp = requests.get(url=url, headers=HEADERS)
-    else:
-        url = netdb['url'] + 'columns'
-        resp = requests.get(url=url, headers=HEADERS, verify=False, cert=netdb['key'])
+        key = netdb_local.get('key')
+
+    verify = False
+    if url.startswith('http://'):
+        verify = True
+
+    resp = requests.get(url=url, headers=HEADERS, verify=verify, cert=key)
 
     if resp.status_code == 200:
         return resp.json()
