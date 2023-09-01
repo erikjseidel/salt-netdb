@@ -12,11 +12,11 @@ HEADERS = {
 def get_grains(netdb, netdb_local):
     router = netdb['id'].upper()
 
-    url = netdb['url'] + 'device/{}'.format(router)
+    url = netdb['url'] + 'column/device/{}'.format(router)
     key = netdb.get('key')
 
     if netdb_local and netdb_local.get('enabled'):
-        url = netdb_local['url'] + 'device/{}'.format(router)
+        url = netdb_local['url'] + 'column/device/{}'.format(router)
         key = netdb_local.get('key')
 
     verify = False
@@ -47,7 +47,7 @@ def get_column(column):
     netdb = __pillar__[_PILLAR]
     netdb_local = __pillar__.get(_LOCAL)
 
-    endpoint = '{column}/{device}'.format(column=column, device=router)
+    endpoint = 'column/{column}/{device}'.format(column=column, device=router)
 
     url = netdb['url'] + endpoint
     key = netdb.get('key')
@@ -87,11 +87,11 @@ def list_columns():
     netdb = __pillar__[_PILLAR]
     netdb_local = __pillar__.get(_LOCAL)
 
-    url = netdb['url'] + 'columns'
+    url = netdb['url'] + 'column'
     key = netdb.get('key')
 
     if netdb_local and netdb_local.get('enabled'):
-        url = netdb_local['url'] + 'columns'
+        url = netdb_local['url'] + 'column'
         key = netdb_local.get('key')
 
     verify = False
