@@ -2,7 +2,7 @@ import logging
 
 __virtualname__ = "repo_yaml"
 
-_REPO_YAML_UTIL_NAME = 'repo'
+_REPO_YAML_UTIL_EP = 'connectors/repo'
 
 log = logging.getLogger(__file__)
 
@@ -11,7 +11,7 @@ def __virtual__():
 
 
 def _call_repo_yaml_util(function, data=None, params=None, method='GET', test=True):
-    endpoint = _REPO_YAML_UTIL_NAME + '/' + function
+    endpoint = f'{_REPO_YAML_UTIL_EP}/{function}'
 
     return __utils__['netdb_util.call_netdb_util'](endpoint, data=data, params=params, method=method, test=test)
 
@@ -34,11 +34,7 @@ def generate_column(column):
         salt-run repo_yaml.generate_column bgp
 
     """
-    params = {
-            'column' : column,
-            }
-
-    return _call_repo_yaml_util('generate_column', params=params)
+    return _call_repo_yaml_util(column)
 
 
 def reload_column(column, verbose=False):
@@ -60,11 +56,7 @@ def reload_column(column, verbose=False):
         salt-run repo_yaml.reload_column bgp
 
     """
-    params = {
-            'column' : column,
-            }
-
-    ret = _call_repo_yaml_util('reload_column', params=params, method='POST')
+    ret = _call_repo_yaml_util(column, method='POST')
 
     if ret['result'] and not ret['error'] and not verbose:
         return { 'result': True }

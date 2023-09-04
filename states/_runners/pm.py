@@ -5,7 +5,7 @@ from copy      import deepcopy
 
 __virtualname__ = "pm"
 
-_PM_UTIL_NAME = 'pm'
+_PM_UTIL_EP = 'connectors/pm'
 
 log = logging.getLogger(__file__)
 
@@ -14,7 +14,7 @@ def __virtual__():
 
 
 def _call_pm_util(function, data=None, params=None, method='GET', test=True):
-    endpoint = _PM_UTIL_NAME + '/' + function
+    endpoint = f'{_PM_UTIL_EP}/{function}'
 
     return __utils__['netdb_util.call_netdb_util'](endpoint, data=data, params=params, method=method, test=test)
 
@@ -36,7 +36,7 @@ def generate_direct_sessions():
         salt-run pm.generate_direct_sessions
 
     """
-    return _call_pm_util('generate_direct_sessions')
+    return _call_pm_util('sessions/direct')
 
 
 def generate_ixp_sessions():
@@ -56,7 +56,7 @@ def generate_ixp_sessions():
         salt-run pm.generate_ixp_sessions
 
     """
-    return _call_pm_util('generate_ixp_sessions')
+    return _call_pm_util('sessions/ixp')
 
 
 def reload_bgp(verbose=False):
@@ -77,7 +77,7 @@ def reload_bgp(verbose=False):
         salt-run pm.reload_bgp
 
     """
-    ret = _call_pm_util('reload_ebgp', method='POST')
+    ret = _call_pm_util('sessions/reload', method='POST')
 
     if ret['result'] and not ret['error'] and not verbose:
         return { 'result': True }
@@ -109,7 +109,7 @@ def set_maintenance(device, neighbor):
             'status' : 'maintenance',
             }
 
-    return _call_pm_util('set_status', params=params, method='PUT')
+    return _call_pm_util('sessions/status', params=params, method='PUT')
 
 
 def set_enabled(device, neighbor):
@@ -136,7 +136,7 @@ def set_enabled(device, neighbor):
             'status' : 'enabled',
             }
 
-    return _call_pm_util('set_status', params=params, method='PUT')
+    return _call_pm_util('sessions/status', params=params, method='PUT')
 
 
 def create_policy(name, type, family, weight=None, comment=None):
@@ -169,7 +169,7 @@ def create_policy(name, type, family, weight=None, comment=None):
             'comment' : comment,
             }
 
-    return _call_pm_util('create_policy', data=data, method='POST')
+    return _call_pm_util('policy', data=data, method='POST')
 
 
 def delete_policy(name):
@@ -193,7 +193,7 @@ def delete_policy(name):
             'name': name,
             }
 
-    return _call_pm_util('delete_policy', params=params, method='DELETE')
+    return _call_pm_util('policy', params=params, method='DELETE')
 
 
 def create_asn(asn, name, comment=None, ipv4_prefix_limit=None, ipv6_prefix_limit=None):
@@ -226,7 +226,7 @@ def create_asn(asn, name, comment=None, ipv4_prefix_limit=None, ipv6_prefix_limi
             'ipv6_prefix_limit' : ipv6_prefix_limit,
             }
 
-    return _call_pm_util('create_asn', data=data, method='POST')
+    return _call_pm_util('asn', data=data, method='POST')
 
 
 def peeringdb_sync_asn(asn):
@@ -246,11 +246,7 @@ def peeringdb_sync_asn(asn):
         salt-run pm.peeringdb_sync_asn 13335
 
     """
-    params = {
-            'asn': asn,
-            }
-
-    return _call_pm_util('peeringdb_asn_sync', params=params, method='POST')
+    return _call_pm_util(f'asn/{asn}/sync', method='POST')
 
 
 def add_direct_session(device, peer_ip, asn, import_policy=None, export_policy=None, local_ip=None,
@@ -296,7 +292,7 @@ def add_direct_session(device, peer_ip, asn, import_policy=None, export_policy=N
             'local_asn' : local_asn,
             }
 
-    return _call_pm_util('create_direct_session', data=data, method='POST')
+    return _call_pm_util('sessions/direct', data=data, method='POST')
 
 
 def update_direct_session(device, peer_ip, import_policy=None, export_policy=None,
@@ -338,7 +334,7 @@ def update_direct_session(device, peer_ip, import_policy=None, export_policy=Non
             'status'    : status,
             }
 
-    return _call_pm_util('update_direct_session', data=data, method='PUT')
+    return _call_pm_util('sessions/direct', data=data, method='PUT')
 
 
 def delete_direct_session(device, neighbor):
@@ -365,4 +361,4 @@ def delete_direct_session(device, neighbor):
             'ip'     : neighbor,
             }
 
-    return _call_pm_util('delete_direct_session', params=params, method='DELETE')
+    return _call_pm_util('sessions/direct', params=params, method='DELETE')

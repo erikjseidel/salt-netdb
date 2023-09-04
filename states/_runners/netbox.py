@@ -5,7 +5,7 @@ from copy      import deepcopy
 
 __virtualname__ = "netbox"
 
-_NETBOX_UTIL_NAME = 'netbox'
+_NETBOX_UTIL_EP = 'connectors/netbox'
 
 log = logging.getLogger(__file__)
 
@@ -14,7 +14,7 @@ def __virtual__():
 
 
 def _call_netbox_util(function, data=None, params=None, method='GET', test=True):
-    endpoint = _NETBOX_UTIL_NAME + '/' + function
+    endpoint = f'{_NETBOX_UTIL_EP}/{function}'
 
     return __utils__['netdb_util.call_netdb_util'](endpoint, data=data, params=params, method=method, test=test)
 
@@ -35,7 +35,7 @@ def generate_devices():
         salt-run netbox.generate_devices
 
     """
-    return _call_netbox_util('generate_devices')
+    return _call_netbox_util('device')
 
 
 def generate_interfaces():
@@ -55,7 +55,7 @@ def generate_interfaces():
         salt-run netbox.generate_interfaces sin1
 
     """
-    return _call_netbox_util('generate_interfaces')
+    return _call_netbox_util('interface')
 
 
 def generate_isis():
@@ -74,7 +74,7 @@ def generate_isis():
         salt-run netbox.generate_isis
 
     """
-    return _call_netbox_util('generate_igp')
+    return _call_netbox_util('igp')
 
 
 def generate_ebgp():
@@ -93,7 +93,7 @@ def generate_ebgp():
         salt-run netbox.generate_ebgp
 
     """
-    return _call_netbox_util('generate_ebgp')
+    return _call_netbox_util('ebgp')
 
 
 def reload_devices(verbose=False):
@@ -114,7 +114,7 @@ def reload_devices(verbose=False):
         salt-run netbox.reload_devices
 
     """
-    ret = _call_netbox_util('reload_devices', method='POST')
+    ret = _call_netbox_util('device', method='POST')
 
     if ret['result'] and not ret['error'] and not verbose:
         return { 'result': True }
@@ -140,7 +140,7 @@ def reload_interfaces(verbose=False):
         salt-run netbox.reload_interfaces
 
     """
-    ret = _call_netbox_util('reload_interfaces', method='POST')
+    ret = _call_netbox_util('interface', method='POST')
 
     if ret['result'] and not ret['error'] and not verbose:
         return { 'result': True }
@@ -166,7 +166,7 @@ def reload_isis(verbose=False):
         salt-run netbox.reload_isis
 
     """
-    ret = _call_netbox_util('reload_igp', method='POST')
+    ret = _call_netbox_util('igp', method='POST')
 
     if ret['result'] and not ret['error'] and not verbose:
         return { 'result': True }
@@ -192,7 +192,7 @@ def reload_bgp(verbose=False):
         salt-run netbox.reload_bgp
 
     """
-    ret = _call_netbox_util('reload_ebgp', method='POST')
+    ret = _call_netbox_util('ebgp', method='POST')
 
     if ret['result'] and not ret['error'] and not verbose:
         return { 'result': True }
@@ -221,7 +221,7 @@ def update_ptrs(test=True):
     if not isinstance(test, bool):
         return {"result": False, "comment": "test only accepts true or false."}
 
-    return _call_netbox_util('update_ptrs', test=test)
+    return _call_netbox_util('script/update_ptrs', method='POST', test=test)
 
 
 def update_iface_descriptions(test=True):
@@ -246,7 +246,7 @@ def update_iface_descriptions(test=True):
     if not isinstance(test, bool):
         return {"result": False, "comment": "test only accepts true or false."}
 
-    return _call_netbox_util('update_iface_descriptions', test=test)
+    return _call_netbox_util('script/update_iface_descriptions', method='POST', test=test)
 
 
 def renumber(ipv4, ipv6, test=True):
@@ -270,12 +270,12 @@ def renumber(ipv4, ipv6, test=True):
     if not isinstance(test, bool):
         return {"result": False, "comment": "test only accepts true or false."}
 
-    params = {
-            'ipv4': ipv4,
-            'ipv6': ipv6,
+    data = {
+            'ipv4_prefix': ipv4,
+            'ipv6_prefix': ipv6,
             }
 
-    return _call_netbox_util('renumber', params=params, test=test)
+    return _call_netbox_util('script/renumber', data=data, method='POST', test=test)
 
 
 def prune_ips(test=True):
@@ -300,7 +300,7 @@ def prune_ips(test=True):
     if not isinstance(test, bool):
         return {"result": False, "comment": "test only accepts true or false."}
 
-    return _call_netbox_util('prune_ips', test=test)
+    return _call_netbox_util('script/prune_ips', method='POST', test=test)
 
 
 def create_pni(device, interface, peer_name, cid, test=True):
@@ -339,7 +339,7 @@ def create_pni(device, interface, peer_name, cid, test=True):
 
     data = { k : v for k, v in data.items() if v }
 
-    return _call_netbox_util('create_pni', data=data, test=test)
+    return _call_netbox_util('script/create_pni', data=data, method='POST', test=test)
 
 
 def create_bundle(device, interfaces, layer3_4=False, lacp_slow=False, test=True):
@@ -387,7 +387,7 @@ def create_bundle(device, interfaces, layer3_4=False, lacp_slow=False, test=True
 
     data = { k : v for k, v in data.items() if v }
 
-    return _call_netbox_util('create_bundle', data=data, test=test)
+    return _call_netbox_util('script/create_bundle', data=data, method='POST', test=test)
 
 
 def configure_pni(device, interface, peer_asn, vlan_id=None, vcid=None, autogen_ips=False, ipv4=None, ipv6=None, test=True):
@@ -434,4 +434,4 @@ def configure_pni(device, interface, peer_asn, vlan_id=None, vcid=None, autogen_
 
     data = { k : v for k, v in data.items() if v }
 
-    return _call_netbox_util('configure_pni', data=data, test=test)
+    return _call_netbox_util('script/configure_pni', data=data, method='POST', test=test)

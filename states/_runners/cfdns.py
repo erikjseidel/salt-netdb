@@ -6,7 +6,7 @@ from copy      import deepcopy
 
 __virtualname__ = "cfdns"
 
-_CFDNS_UTIL_NAME = 'cfdns'
+_CFDNS_UTIL_EP = 'connectors/cfdns'
 
 logger = logging.getLogger(__file__)
 
@@ -15,7 +15,7 @@ def __virtual__():
 
 
 def _call_cfdns_util(function, data=None, method='GET', test=True):
-    endpoint = _CFDNS_UTIL_NAME + '/' + function
+    endpoint = f'{_CFDNS_UTIL_EP}/{function}'
 
     return __utils__['netdb_util.call_netdb_util'](endpoint, data=data, method=method, test=test)
 
@@ -48,7 +48,7 @@ def synchronize(test=True):
     if not isinstance(test, bool):
         return {"result": False, "comment": "test only accepts true or false."}
 
-    return _call_cfdns_util('update_cf', test=test)
+    return _call_cfdns_util('update', method='POST', test=test)
 
 
 def get_ptrs():
@@ -67,7 +67,7 @@ def get_ptrs():
         salt-run cfdns.get_ptrs
 
     """
-    return _call_cfdns_util('get_cf')
+    return _call_cfdns_util('records')
 
 
 def get_zones():
@@ -86,7 +86,7 @@ def get_zones():
         salt-run cfdns.get_zones
 
     """
-    return _call_cfdns_util('get_cfzones')
+    return _call_cfdns_util('zones')
 
 
 def upsert_zone(prefix, account, zone, managed, test=True):
@@ -124,7 +124,7 @@ def upsert_zone(prefix, account, zone, managed, test=True):
             "managed"  :   managed,
             }
 
-    return _call_cfdns_util('set_cfzone', data=data, test=test)
+    return _call_cfdns_util('zones', data=data, method='POST', test=test)
 
 
 def delete_zone(prefix):
@@ -143,10 +143,6 @@ def delete_zone(prefix):
         salt-run cfdns.delete_zone 23.181.64.0/24
 
     """
-    method = 'DELETE'
+    params = { 'prefix' : prefix }
 
-    data =  {
-            "prefix"   :   prefix,
-            }
-
-    return _call_cfdns_util('delete_cfzone', data=data, method=method)
+    return _call_cfdns_util('zones', params=params, method='DELETE')

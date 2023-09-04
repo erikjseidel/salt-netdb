@@ -5,7 +5,7 @@ from copy      import deepcopy
 
 __virtualname__ = "ripestat"
 
-_PM_UTIL_NAME = 'ripe'
+_PM_UTIL_EP = 'utility/ripe'
 
 log = logging.getLogger(__file__)
 
@@ -14,7 +14,7 @@ def __virtual__():
 
 
 def _call_ripe_util(function, data=None, params=None, method='GET', test=True):
-    endpoint = _PM_UTIL_NAME + '/' + function
+    endpoint = f'{_PM_UTIL_EP}/{function}'
 
     return __utils__['netdb_util.call_netdb_util'](endpoint, data=data, params=params, method=method, test=test)
 
@@ -37,8 +37,6 @@ def get_paths(prefix):
         salt-run pm.set_maintenance sin2 169.254.169.254
 
     """
-    params = {
-            'prefix' : prefix,
-            }
+    params = { 'prefix' : prefix }
 
-    return _call_ripe_util('get_paths', params=params)
+    return _call_ripe_util('paths', params=params)

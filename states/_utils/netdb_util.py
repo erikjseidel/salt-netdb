@@ -64,7 +64,7 @@ def call_netdb_util(endpoint, data=None, params={}, method='GET', test=True):
             cert=key
     )
 
-    if resp.status_code in [200, 404, 422]:
+    if resp.status_code in [200, 400, 404, 422]:
         return resp.json()
     else:
         return {
