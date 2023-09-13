@@ -1,4 +1,9 @@
 {%- set policy_data = data['out'] %}
+{%- if grains.version.startswith('1.4') %}
+{%-     set version = '1.4' %}
+{%- else %}
+{%-     set version = '1.3' %}
+{%- endif %}
 
 delete policy as-path-list
 delete policy community-list
@@ -148,14 +153,26 @@ set policy route-map {{ route_map }} rule {{ rule['number'] }} set origin {{ rul
 
 {%-                     endif %}
 {%-                     if ( rule['set']['community'] is defined ) %}
+{%-                         if version == '1.4' %}
+
+set policy route-map {{ route_map }} rule {{ rule['number'] }} set community add '{{ rule['set']['community'] }}'
+
+{%-                         else %}
 
 set policy route-map {{ route_map }} rule {{ rule['number'] }} set community '{{ rule['set']['community'] }}'
 
+{%-                         endif %}
 {%-                     endif %}
 {%-                     if ( rule['set']['large_community'] is defined ) %}
+{%-                         if version == '1.4' %}
+
+set policy route-map {{ route_map }} rule {{ rule['number'] }} set large-community add '{{ rule['set']['large_community'] }}'
+
+{%-                         else %}
 
 set policy route-map {{ route_map }} rule {{ rule['number'] }} set large-community '{{ rule['set']['large_community'] }}'
 
+{%-                         endif %}
 {%-                     endif %}
 {%-                     if ( rule['set']['as_path_exclude'] is defined ) %}
 

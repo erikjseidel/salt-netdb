@@ -7,7 +7,7 @@ ISIS_Configuration:
     - template_name: salt://{{ slspath }}/templates/{{ grains.os }}.jinja
     - data: {{ data }}
 
-{%- elif data['error'] %}
+{%- elif not data['result'] %}
 isis_generate_dictionary_empty:
   test.fail_without_changes:
     - name: "{{ data['comment'] }}"
