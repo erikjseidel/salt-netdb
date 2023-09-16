@@ -154,9 +154,15 @@ set policy route-map {{ route_map }} rule {{ rule['number'] }} set origin {{ rul
 {%-                     endif %}
 {%-                     if ( rule['set']['community'] is defined ) %}
 {%-                         if version == '1.4' %}
+{%-                             set communities = rule['set']['community'].split(" ") %}
+{%-                             if communities[-1] == 'additive' %}
+{%-                                 do communities.pop() %}
+{%-                                 for community in communities %}
 
-set policy route-map {{ route_map }} rule {{ rule['number'] }} set community add '{{ rule['set']['community'] }}'
+set policy route-map {{ route_map }} rule {{ rule['number'] }} set community add '{{ community }}'
 
+{%-                                 endfor %}
+{%-                             endif %}
 {%-                         else %}
 
 set policy route-map {{ route_map }} rule {{ rule['number'] }} set community '{{ rule['set']['community'] }}'
@@ -165,9 +171,15 @@ set policy route-map {{ route_map }} rule {{ rule['number'] }} set community '{{
 {%-                     endif %}
 {%-                     if ( rule['set']['large_community'] is defined ) %}
 {%-                         if version == '1.4' %}
+{%-                             set communities = rule['set']['large_community'].split(" ") %}
+{%-                             if communities[-1] == 'additive' %}
+{%-                                 do communities.pop() %}
+{%-                                 for community in communities %}
 
-set policy route-map {{ route_map }} rule {{ rule['number'] }} set large-community add '{{ rule['set']['large_community'] }}'
+set policy route-map {{ route_map }} rule {{ rule['number'] }} set large-community add '{{ community }}'
 
+{%-                                 endfor %}
+{%-                             endif %}
 {%-                         else %}
 
 set policy route-map {{ route_map }} rule {{ rule['number'] }} set large-community '{{ rule['set']['large_community'] }}'

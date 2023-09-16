@@ -1,3 +1,9 @@
+{%- set bgp_data = data['out'] %}
+{%- if grains.version.startswith('1.4') %}
+{%-     set version = '1.4' %}
+{%- else %}
+{%-     set version = '1.3' %}
+{%- endif %}
 
 {%- for interface, iface_data in data['out'].items() %}
 {%-     set vyos_type = iface_data['vyos_type'] %}
@@ -101,67 +107,66 @@ set interfaces {{ iface_data['vlan']['parent_vyos_type'] }} {{ iface_data['vlan'
 {%-         endfor %}
 {%-     endif %}
 
-
+{%-     if version == '1.3' %}
 {# 
     Stateless firewall (ACL) configuration
 #}
-{%-    if ( iface_data['firewall'] is defined ) %}
+{%-         if ( iface_data['firewall'] is defined ) %}
 {#  
        Rules for control plane connections  
 #}
-{%-         if iface_data['firewall']['local'] is defined %}
-{%-             for family, policy in iface_data['firewall']['local'].items() %}
-{%-                 set header = '' %}
-{%-                 if family == 'ipv6' %}
-{%-                     set header = 'ipv6-' %}
-{%-                 endif %}
+{%-             if iface_data['firewall']['local'] is defined %}
+{%-                 for family, policy in iface_data['firewall']['local'].items() %}
+{%-                     set header = '' %}
+{%-                     if family == 'ipv6' %}
+{%-                         set header = 'ipv6-' %}
+{%-                     endif %}
 
-{%-                 if vyos_type in ['bonding', 'ethernet'] %}
+{%-                     if vyos_type in ['bonding', 'ethernet'] %}
 set interfaces {{ vyos_type }} {{ interface }} firewall local {{ header }}name {{ policy }}
-{%-                 else %}
+{%-                     else %}
 set interfaces {{ iface_data['vlan']['parent_vyos_type'] }} {{ iface_data['vlan']['parent'] }} vif {{ iface_data['vlan']['id'] }} firewall local {{ header }}name {{ policy }}
-{%-                 endif %}
-{%-             endfor %}
+{%-                     endif %}
+{%-                 endfor %}
 
-{%-         endif %}
+{%-             endif %}
 {#    
        Rules for ingress forwarding  
 #}
-{%-         if iface_data['firewall']['ingress'] is defined %}
-{%-             for family, policy in iface_data['firewall']['ingress'].items() %}
-{%-                 set header = '' %}
-{%-                 if family == 'ipv6' %}
-{%-                     set header = 'ipv6-' %}
-{%-                 endif %}
+{%-             if iface_data['firewall']['ingress'] is defined %}
+{%-                 for family, policy in iface_data['firewall']['ingress'].items() %}
+{%-                     set header = '' %}
+{%-                     if family == 'ipv6' %}
+{%-                         set header = 'ipv6-' %}
+{%-                     endif %}
 
-{%-                 if vyos_type in ['bonding', 'ethernet'] %}
+{%-                     if vyos_type in ['bonding', 'ethernet'] %}
 set interfaces {{ vyos_type }} {{ interface }} firewall in {{ header }}name {{ policy }}
-{%-                 else %}
+{%-                     else %}
 set interfaces {{ iface_data['vlan']['parent_vyos_type'] }} {{ iface_data['vlan']['parent'] }} vif {{ iface_data['vlan']['id'] }} firewall in {{ header }}name {{ policy }}
-{%-                 endif %}
-{%-             endfor %}
+{%-                     endif %}
+{%-                 endfor %}
 
-{%-         endif %}
+{%-             endif %}
 {#  
        Rules for egress forwarding  
 #}
-{%-         if iface_data['firewall']['egress'] is defined %}
-{%-             for family, policy in iface_data['firewall']['egress'].items() %}
-{%-                 set header = '' %}
-{%-                 if family == 'ipv6' %}
-{%-                     set header = 'ipv6-' %}
-{%-                 endif %}
+{%-             if iface_data['firewall']['egress'] is defined %}
+{%-                 for family, policy in iface_data['firewall']['egress'].items() %}
+{%-                     set header = '' %}
+{%-                     if family == 'ipv6' %}
+{%-                         set header = 'ipv6-' %}
+{%-                     endif %}
 
-{%-                 if vyos_type in ['bonding', 'ethernet'] %}
+{%-                     if vyos_type in ['bonding', 'ethernet'] %}
 set interfaces {{ vyos_type }} {{ interface }} firewall out {{ header }}name {{ policy }}
-{%-                 else %}
+{%-                     else %}
 set interfaces {{ iface_data['vlan']['parent_vyos_type'] }} {{ iface_data['vlan']['parent'] }} vif {{ iface_data['vlan']['id'] }} firewall out {{ header }}name {{ policy }}
-{%-                 endif %}
-{%-             endfor %}
+{%-                     endif %}
+{%-                 endfor %}
 
+{%-             endif %}
 {%-         endif %}
-
-
 {%-     endif %}
 
 {%-     if vyos_type in ['bonding', 'ethernet'] %}

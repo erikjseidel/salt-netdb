@@ -1,3 +1,9 @@
+{%- set bgp_data = data['out'] %}
+{%- if grains.version.startswith('1.4') %}
+{%-     set version = '1.4' %}
+{%- else %}
+{%-     set version = '1.3' %}
+{%- endif %}
 
 delete interfaces dummy
 
@@ -24,23 +30,25 @@ set interfaces dummy {{ lo }} description "{{ lo_data['description'] }}"
 
 {%-     endif %}
 
+{%-     if version == '1.3' %}
 {# 
     Stateless firewall (ACL) configuration
 #}
-{%-     if ( lo_data['firewall'] is defined ) %}
+{%-         if ( lo_data['firewall'] is defined ) %}
 {#  
        Rules for control plane connections  
 #}
-{%-         if ( lo_data['firewall']['local'] is defined ) %}
-{%-             if ( lo_data['firewall']['local']['ipv4'] is defined ) %}
+{%-             if ( lo_data['firewall']['local'] is defined ) %}
+{%-                 if ( lo_data['firewall']['local']['ipv4'] is defined ) %}
 
 set interfaces dummy {{ lo }} firewall local name {{ lo_data['firewall']['local']['ipv4'] }}
 
-{%-             endif %}
-{%-             if ( lo_data['firewall']['local']['ipv6'] is defined ) %}
+{%-                 endif %}
+{%-                 if ( lo_data['firewall']['local']['ipv6'] is defined ) %}
 
 set interfaces dummy {{ lo }} firewall local ipv6-name {{ lo_data['firewall']['local']['ipv6'] }}
 
+{%-                 endif %}
 {%-             endif %}
 {%-         endif %}
 {%-     endif %}

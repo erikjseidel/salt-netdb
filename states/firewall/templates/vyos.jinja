@@ -1,5 +1,6 @@
 {%- set fw_data = data['out'] %}
 
+
 {%- if grains.version.startswith('1.4') %}
 {%-     set version = '1.4' %}
 {%-     set ipv4_name = "ipv4 name" %}
@@ -10,13 +11,13 @@
 {%-     set ipv6_name = "ipv6-name" %}
 {%- endif %}
 
-delete firewall
-
 {%- if version == '1.3' %}
 
 delete zone-policy
 
 {%- endif %}
+
+delete firewall
 
 {%- set port_list = namespace(list='') %}
 
@@ -37,6 +38,7 @@ set firewall {{ option }} {{ value }}
 {%-         endif %}
 {%-     endfor %}
 {%- endif %}
+
 {%- if ( fw_data['state_policy'] is defined ) %}
 {%-     if ( fw_data['state_policy']['established'] is defined ) %}
 
@@ -152,6 +154,92 @@ set firewall {{ header }} {{ policy }} rule {{ priority }} destination port '{{ 
 {%-             endif %}
 {%-         endfor %}
 {%-     endfor %}
+{%- endif %}
+
+{%- if version == '1.4' %}
+{%-     if fw_data['interfaces'] is defined %}
+{%-         for group, group_data in fw_data['interfaces'].items() %}
+{%-             if group_data['interfaces'] is defined %}
+{%-                 for interface in group_data['interfaces'] %}
+
+set firewall group interface-group {{ group }} interface {{ interface }}
+
+{%-                 endfor %}
+{%-             endif %}
+{%-         endfor %}
+{%-     endif %}
+{%- endif %}
+
+{%- if ( fw_data['policy_base'] is defined ) %}
+{%-     for family in fw_data['policy_base'] %}
+{%-         for policy, policy_data in fw_data['policy_base'][family].items() %}
+{%-             if ( policy_data['default_action'] is defined ) %}
+
+set firewall {{ family }} {{ policy }} filter default-action {{ policy_data['default_action'] }}
+
+{%-             endif %}
+{%-             if ( policy_data['rules'] is defined ) %}
+{%-                 for rule in policy_data['rules'] %}
+{%-                     set priority = loop.index * 5 %}
+
+set firewall {{ family }} {{ policy }} filter rule {{ priority }} action {{ rule['action'] }}
+
+{%-                     if ( rule['state'] is defined ) %}
+{%-                         for state in rule['state'] %}
+
+set firewall {{ family }} {{ policy }} filter rule {{ priority }} state {{ state }} enable
+
+{%-                         endfor %}
+{%-                     endif %}
+{%-                     if ( rule['protocol'] is defined ) %}
+
+set firewall {{ family }} {{ policy }} filter rule {{ priority }} protocol {{ rule['protocol'] }}
+
+{%-                     endif %}
+{%-                     if ( rule['source'] is defined ) %}
+{%-                         if ( rule['source']['network_group'] is defined ) %}
+
+set firewall {{ family }} {{ policy }} filter rule {{ priority }} source group network-group {{ rule['source']['network_group'] }}
+
+{%-                         endif %}
+{%-                     endif %}
+
+{%-                     if ( rule['interfaces'] is defined ) %}
+{%-                         if ( rule['interfaces']['ingress'] is defined ) %}
+
+set firewall {{ family }} {{ policy }} filter rule {{ priority }} inbound-interface interface-group {{ rule['interfaces']['ingress'] }}
+
+{%-                         endif %}
+{%-                         if ( rule['interfaces']['egress'] is defined ) %}
+
+set firewall {{ family }} {{ policy }} filter rule {{ priority }} outbound-interface interface-group {{ rule['interfaces']['egress'] }}
+
+{%-                         endif %}
+{%-                         if ( rule['policy'] is defined ) %}
+
+set firewall {{ family }} {{ policy }} filter rule {{ priority }} jump-target {{ rule['policy'] }}
+
+{%-                         endif %}
+{%-                     endif %}
+{%-                 endfor %}
+{%-             endif %}
+{%-         endfor %}
+{%-     endfor %}
+
+{# Always allow internal  loopback traffic #}
+set firewall ipv6 input filter rule 1 action 'accept'
+set firewall ipv6 input filter rule 1 source address '::1/128'
+set firewall ipv4 input filter rule 1 action 'accept'
+set firewall ipv4 input filter rule 1 source address '127.0.0.0/8'
+
+{# Always allow http for letsencrypt {for now). This will move eventually. #}
+set firewall ipv6 input filter rule 2 action 'accept'
+set firewall ipv6 input filter rule 2 protocol 'tcp'
+set firewall ipv6 input filter rule 2 destination port '80'
+set firewall ipv4 input filter rule 2 action 'accept'
+set firewall ipv4 input filter rule 2 protocol 'tcp'
+set firewall ipv4 input filter rule 2 destination port '80'
+
 {%- endif %}
 
 {%- if version == '1.3' %}
