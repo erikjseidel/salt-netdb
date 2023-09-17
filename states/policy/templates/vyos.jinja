@@ -187,9 +187,15 @@ set policy route-map {{ route_map }} rule {{ rule['number'] }} set large-communi
 {%-                         endif %}
 {%-                     endif %}
 {%-                     if ( rule['set']['as_path_exclude'] is defined ) %}
+{%-                         if version == '1.4' %}
+
+set policy route-map {{ route_map }} rule {{ rule['number'] }} set as-path exclude '{{ rule['set']['as_path_exclude'] }}'
+
+{%-                         else %}
 
 set policy route-map {{ route_map }} rule {{ rule['number'] }} set as-path-exclude '{{ rule['set']['as_path_exclude'] }}'
 
+{%-                         endif %}
 {%-                     endif %}
 {%-                     if ( rule['set']['next_hop'] is defined ) %}
 

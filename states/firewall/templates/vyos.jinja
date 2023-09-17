@@ -232,14 +232,6 @@ set firewall ipv6 input filter rule 1 source address '::1/128'
 set firewall ipv4 input filter rule 1 action 'accept'
 set firewall ipv4 input filter rule 1 source address '127.0.0.0/8'
 
-{# Always allow http for letsencrypt {for now). This will move eventually. #}
-set firewall ipv6 input filter rule 2 action 'accept'
-set firewall ipv6 input filter rule 2 protocol 'tcp'
-set firewall ipv6 input filter rule 2 destination port '80'
-set firewall ipv4 input filter rule 2 action 'accept'
-set firewall ipv4 input filter rule 2 protocol 'tcp'
-set firewall ipv4 input filter rule 2 destination port '80'
-
 {%- endif %}
 
 {%- if version == '1.3' %}
