@@ -16,9 +16,9 @@ def __virtual__():
 
 
 def _get_ethernet():
-    interfaces =  __utils__['column.pull'](_COLUMN).get('out')
+    interfaces = __utils__['column.pull'](_COLUMN).get('out')
     if not interfaces:
-        return { 'result' : False }
+        return {'result': False}
 
     ethernet = {}
 
@@ -26,7 +26,7 @@ def _get_ethernet():
         if iface.startswith('eth') or iface.startswith('bond'):
             ethernet[iface] = iface_data
 
-    return { 'result': True, 'out': ethernet }
+    return {'result': True, 'out': ethernet}
 
 
 def _is_marked_disabled(interface):
@@ -109,20 +109,26 @@ def generate():
             elif 'eth' in settings['vlan']['parent']:
                 settings['vlan']['parent_vyos_type'] = 'ethernet'
             else:
-                return {'result': False, 'comment': interface + ": unsupported vlan parrent interface type!"}
+                return {
+                    'result': False,
+                    'comment': interface + ": unsupported vlan parrent interface type!",
+                }
         else:
-            return {'result': False, 'comment': interface + ": unsupported interface type!"}
+            return {
+                'result': False,
+                'comment': interface + ": unsupported interface type!",
+            }
 
     return {
-            'result'  : True, 
-            'out'     : ifaces, 
-            'comment' : 'Ethernet interfaces generated for ' + __grains__['id']
-            }
+        'result': True,
+        'out': ifaces,
+        'comment': 'Ethernet interfaces generated for ' + __grains__['id'],
+    }
 
 
 def enable(interface, test=False, debug=False, force=False):
     """
-    Enable a salt managed ethernet, vlan or bundle interface. The interface must exist in 
+    Enable a salt managed ethernet, vlan or bundle interface. The interface must exist in
     netdb.
 
     :param interface: The name of the interface to be enabled
@@ -163,7 +169,7 @@ def enable(interface, test=False, debug=False, force=False):
 
         if iface_type == 'vlan':
             vlan_id = ifaces[interface]['vlan']['id']
-            parent  = ifaces[interface]['vlan']['parent']
+            parent = ifaces[interface]['vlan']['parent']
 
             parent_type = "ethernet "
             if "bond" in parent:
@@ -185,8 +191,8 @@ def enable(interface, test=False, debug=False, force=False):
         if not ret.get('out') and not force:
             ret = {
                 "result": False,
-                "comment": "Interface not marked as disabled in REDIS. Use force=true to commit anyway."
-                }
+                "comment": "Interface not marked as disabled in REDIS. Use force=true to commit anyway.",
+            }
         else:
             ret.update(
                 __salt__['net.load_template'](
@@ -194,7 +200,7 @@ def enable(interface, test=False, debug=False, force=False):
                     template_source="delete interface {{ statement }} disable",
                     test=test,
                     debug=debug,
-                    commit_comment = "enable interface " + interface,
+                    commit_comment="enable interface " + interface,
                     statement=statement,
                     interface=interface,
                 )
@@ -248,7 +254,7 @@ def disable(interface, test=False, debug=False, force=False):
 
         if iface_type == 'vlan':
             vlan_id = ifaces[interface]['vlan']['id']
-            parent  = ifaces[interface]['vlan']['parent']
+            parent = ifaces[interface]['vlan']['parent']
 
             parent_type = "ethernet "
             if "bond" in parent:
@@ -270,8 +276,8 @@ def disable(interface, test=False, debug=False, force=False):
         if ret.get('out') and not force:
             ret = {
                 "result": False,
-                "comment": "Interface is already marked disabled in REDIS. Use force=true to commit anyway."
-                }
+                "comment": "Interface is already marked disabled in REDIS. Use force=true to commit anyway.",
+            }
         else:
             ret.update(
                 __salt__['net.load_template'](
@@ -279,7 +285,7 @@ def disable(interface, test=False, debug=False, force=False):
                     template_source="set interface {{ statement }} disable",
                     test=test,
                     debug=debug,
-                    commit_comment = "disable interface " + interface,
+                    commit_comment="disable interface " + interface,
                     statement=statement,
                     interface=interface,
                 )
@@ -318,7 +324,7 @@ def display(type='ethernet'):
         type = 'bonding'
 
     ret = __salt__['net.cli']("show interface " + type)
-    
+
     disabled_ifaces = _get_disabled_interfaces()['out']
 
     iface_fmt = "{0:30} {1:20} {2:20}"
@@ -333,8 +339,10 @@ def display(type='ethernet'):
             data = iface_fmt.format(interface, iface_data.get('datasource'), disabled)
             iface_list.append(data)
 
-        comment_base= iface_fmt.format("salt managed interfaces", "datasource", "" ) + "\n---\n"
-        ret['comment'] = comment_base + '\n'.join( iface_list )
+        comment_base = (
+            iface_fmt.format("salt managed interfaces", "datasource", "") + "\n---\n"
+        )
+        ret['comment'] = comment_base + '\n'.join(iface_list)
     else:
         ret['comment'] = "netdb API is down"
 
@@ -364,7 +372,7 @@ def apply_pni(interfaces, test=False, debug=False):
     """
     name = 'apply_pni'
 
-    ret = {'result' : False}
+    ret = {'result': False}
 
     if not isinstance(test, bool):
         return {"result": False, "comment": "test option only accepts true or false."}
@@ -372,12 +380,11 @@ def apply_pni(interfaces, test=False, debug=False):
     if not isinstance(debug, bool):
         return {"result": False, "comment": "debug option only accepts true or false."}
 
-
     ethernet = generate()
 
     interfaces = interfaces.split(',')
 
-    pni = { 'comment' : 'generated interfaces', 'result' : False }
+    pni = {'comment': 'generated interfaces', 'result': False}
 
     for iface, data in ethernet['out'].items():
         if iface in interfaces:
@@ -389,10 +396,10 @@ def apply_pni(interfaces, test=False, debug=False):
 
     if interfaces:
         return {
-                'result'  : False,
-                'out'     : interfaces,
-                'comment' : 'Interfaces not found',
-                }
+            'result': False,
+            'out': interfaces,
+            'comment': 'Interfaces not found',
+        }
 
     if pni['result']:
         ret.update(
@@ -400,7 +407,7 @@ def apply_pni(interfaces, test=False, debug=False):
                 'salt://ethernet/templates/vyos.jinja',
                 test=test,
                 debug=debug,
-                commit_comment = "Apply interfaces",
+                commit_comment="Apply interfaces",
                 data=pni,
             )
         )

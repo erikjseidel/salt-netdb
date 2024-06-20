@@ -1,13 +1,14 @@
 import logging, copy
-from netaddr   import IPSet
+from netaddr import IPSet
 from ipaddress import ip_interface, ip_network
-from copy      import deepcopy
+from copy import deepcopy
 
 __virtualname__ = "ripestat"
 
 _PM_UTIL_EP = 'utility/ripe'
 
 log = logging.getLogger(__file__)
+
 
 def __virtual__():
     return __virtualname__
@@ -16,7 +17,9 @@ def __virtual__():
 def _call_ripe_util(function, data=None, params=None, method='GET', test=True):
     endpoint = f'{_PM_UTIL_EP}/{function}'
 
-    return __utils__['netdb_util.call_netdb_util'](endpoint, data=data, params=params, method=method, test=test)
+    return __utils__['netdb_util.call_netdb_util'](
+        endpoint, data=data, params=params, method=method, test=test
+    )
 
 
 def get_paths(prefix):
@@ -37,6 +40,6 @@ def get_paths(prefix):
         salt-run pm.set_maintenance sin2 169.254.169.254
 
     """
-    params = { 'prefix' : prefix }
+    params = {'prefix': prefix}
 
     return _call_ripe_util('paths', params=params)

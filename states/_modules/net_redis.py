@@ -29,6 +29,7 @@ a router are removed, the empty list and router id key will remain in place).
 
 """
 
+
 def add_entry(key, entry):
     """
     Adds an entry from list of salt managed entries for router grains.id by key
@@ -47,24 +48,28 @@ def add_entry(key, entry):
     entries = __utils__['net_redis.get_kv'](key)
 
     if entries['out'] == None:
-        entries['out'] = { router : [ entry ] }
+        entries['out'] = {router: [entry]}
 
     else:
         if router in entries['out'] and isinstance(entries['out'][router], list):
             if entry in entries['out'][router]:
-                return { 
-                        'return': False, 
-                        'comment': 'Entry already added in REDIS',
-                        'out': '',
-                        }
+                return {
+                    'return': False,
+                    'comment': 'Entry already added in REDIS',
+                    'out': '',
+                }
             else:
                 entries['out'][router].append(entry)
         else:
-            entries['out'][router] = [ entry ]
+            entries['out'][router] = [entry]
 
     __utils__['net_redis.set_kv'](key, entries['out'])
 
-    return { "result": True, "comment": 'Entry successfully added', 'out': entries['out'][router] }
+    return {
+        "result": True,
+        "comment": 'Entry successfully added',
+        'out': entries['out'][router],
+    }
 
 
 def remove_entry(key, entry):
@@ -96,9 +101,13 @@ def remove_entry(key, entry):
 
         __utils__['net_redis.set_kv'](key, entries['out'])
 
-        return { "result": True, "comment": 'Entry removed', 'out': entries['out'][router] }
+        return {
+            "result": True,
+            "comment": 'Entry removed',
+            'out': entries['out'][router],
+        }
 
-    return { "result": False, "comment": "Entry not found"}
+    return {"result": False, "comment": "Entry not found"}
 
 
 def get_entries(key):
@@ -117,14 +126,14 @@ def get_entries(key):
 
     if entries['out'] != None:
         if router in entries['out'].keys():
-            return { 'return': True, 'out': entries['out'][router] }
+            return {'return': True, 'out': entries['out'][router]}
 
-    return { 'return': False, 'comment': 'No entries found', 'out': [] }
+    return {'return': False, 'comment': 'No entries found', 'out': []}
 
 
 def check_entry(key, entry):
     """
-    Check if an entry exists and an entry list stored in `key' for router grains.id 
+    Check if an entry exists and an entry list stored in `key' for router grains.id
 
     :param key: name of the entry list to query
     :param entry: name of the entry to query

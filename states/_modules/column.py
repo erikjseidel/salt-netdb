@@ -4,6 +4,7 @@ __virtualname__ = "column"
 
 logger = logging.getLogger(__file__)
 
+
 def __virtual__():
     return __virtualname__
 
@@ -57,11 +58,11 @@ def get(column, delimiter=':'):
     if isinstance(delimiter, int):
         delimiter = str(delimiter)
     elif not isinstance(delimiter, str):
-        return  {
-                'result'  : False,
-                'error'   : True,
-                'comment' : 'delimiter must be a string or char',
-                }
+        return {
+            'result': False,
+            'error': True,
+            'comment': 'delimiter must be a string or char',
+        }
 
     ret = __utils__['column.get'](column, delimiter)
 
@@ -92,11 +93,11 @@ def keys(column, delimiter=':'):
     if isinstance(delimiter, int):
         delimiter = str(delimiter)
     elif not isinstance(delimiter, str):
-        return  {
-                'result'  : False,
-                'error'   : True,
-                'comment' : 'delimiter must be a string or char',
-                }
+        return {
+            'result': False,
+            'error': True,
+            'comment': 'delimiter must be a string or char',
+        }
 
     ret = __utils__['column.get'](column, delimiter)
 
@@ -129,11 +130,11 @@ def item(*arg, **kwarg):
     if isinstance(delimiter, int):
         delimiter = str(delimiter)
     elif not isinstance(delimiter, str):
-        return  {
-                'result'  : False,
-                'error'   : True,
-                'comment' : 'delimiter must be a string or char',
-                }
+        return {
+            'result': False,
+            'error': True,
+            'comment': 'delimiter must be a string or char',
+        }
 
     for column in arg:
         data = __utils__['column.get'](column, delimiter)

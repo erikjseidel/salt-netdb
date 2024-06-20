@@ -6,14 +6,15 @@ logger = logging.getLogger(__file__)
 
 _COLUMN = 'interface'
 
+
 def __virtual__():
     return __virtualname__
 
 
 def _get_loopbacks():
-    interfaces =  __utils__['column.pull'](_COLUMN).get('out')
-    if not interfaces: 
-        return { 'result' : False }
+    interfaces = __utils__['column.pull'](_COLUMN).get('out')
+    if not interfaces:
+        return {'result': False}
 
     loopbacks = {}
 
@@ -22,10 +23,10 @@ def _get_loopbacks():
             loopbacks[iface] = iface_data
 
     return {
-            'result'  : True,
-            'out'     : loopbacks,
-            'comment' : 'Loopback interfaces generated for ' + __grains__['id']
-            }
+        'result': True,
+        'out': loopbacks,
+        'comment': 'Loopback interfaces generated for ' + __grains__['id'],
+    }
 
 
 def generate():
@@ -45,7 +46,7 @@ def generate():
         salt sin1 loopback.generate
 
     """
-    
+
     return _get_loopbacks()
 
 
@@ -70,7 +71,7 @@ def display():
     ret_lo = _get_loopbacks()
 
     ret = __salt__['net.cli']("show interface dummy")
-    
+
     if ret_lo['result']:
         ifaces = ret_lo.get('out')
         iface_list = []
@@ -78,7 +79,9 @@ def display():
             data = interface
             iface_list.append(data)
 
-        ret['comment'] = "salt managed loopback (dummy) interfaces:\n--- \n" + '\n'.join( iface_list )
+        ret['comment'] = (
+            "salt managed loopback (dummy) interfaces:\n--- \n" + '\n'.join(iface_list)
+        )
     else:
         ret['comment'] = "netdb API down"
 
