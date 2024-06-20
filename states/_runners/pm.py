@@ -1,13 +1,14 @@
 import logging, copy
-from netaddr   import IPSet
+from netaddr import IPSet
 from ipaddress import ip_interface, ip_network
-from copy      import deepcopy
+from copy import deepcopy
 
 __virtualname__ = "pm"
 
 _PM_UTIL_EP = 'connectors/pm'
 
 log = logging.getLogger(__file__)
+
 
 def __virtual__():
     return __virtualname__
@@ -16,12 +17,14 @@ def __virtual__():
 def _call_pm_util(function, data=None, params=None, method='GET', test=True):
     endpoint = f'{_PM_UTIL_EP}/{function}'
 
-    return __utils__['netdb_util.call_netdb_util'](endpoint, data=data, params=params, method=method, test=test)
+    return __utils__['netdb_util.call_netdb_util'](
+        endpoint, data=data, params=params, method=method, test=test
+    )
 
 
 def generate_direct_sessions():
     """
-    Show eBGP direct session config generated from Peering Manager source 
+    Show eBGP direct session config generated from Peering Manager source
     in netdb format.
 
     :return: a dictionary consisting of the following keys:
@@ -41,7 +44,7 @@ def generate_direct_sessions():
 
 def generate_ixp_sessions():
     """
-    Show eBGP IXP session config generated from Peering Manager source 
+    Show eBGP IXP session config generated from Peering Manager source
     in netdb format.
 
     :return: a dictionary consisting of the following keys:
@@ -80,7 +83,7 @@ def reload_bgp(verbose=False):
     ret = _call_pm_util('sessions/reload', method='POST')
 
     if ret['result'] and not ret['error'] and not verbose:
-        return { 'result': True }
+        return {'result': True}
 
     return ret
 
@@ -104,10 +107,10 @@ def set_maintenance(device, neighbor):
 
     """
     params = {
-            'device' : device.upper(),
-            'ip'     : neighbor,
-            'status' : 'maintenance',
-            }
+        'device': device.upper(),
+        'ip': neighbor,
+        'status': 'maintenance',
+    }
 
     return _call_pm_util('sessions/status', params=params, method='PUT')
 
@@ -131,10 +134,10 @@ def set_enabled(device, neighbor):
 
     """
     params = {
-            'device' : device.upper(),
-            'ip'     : neighbor,
-            'status' : 'enabled',
-            }
+        'device': device.upper(),
+        'ip': neighbor,
+        'status': 'enabled',
+    }
 
     return _call_pm_util('sessions/status', params=params, method='PUT')
 
@@ -162,12 +165,12 @@ def create_policy(name, type, family, weight=None, comment=None):
 
     """
     data = {
-            'name'    : name,
-            'type'    : type,
-            'family'  : family,
-            'weight'  : weight,
-            'comment' : comment,
-            }
+        'name': name,
+        'type': type,
+        'family': family,
+        'weight': weight,
+        'comment': comment,
+    }
 
     return _call_pm_util('policy', data=data, method='POST')
 
@@ -190,8 +193,8 @@ def delete_policy(name):
 
     """
     params = {
-            'name': name,
-            }
+        'name': name,
+    }
 
     return _call_pm_util('policy', params=params, method='DELETE')
 
@@ -219,12 +222,12 @@ def create_asn(asn, name, comment=None, ipv4_prefix_limit=None, ipv6_prefix_limi
 
     """
     data = {
-            'asn'     : asn,
-            'name'    : name,
-            'comment' : comment,
-            'ipv4_prefix_limit' : ipv4_prefix_limit,
-            'ipv6_prefix_limit' : ipv6_prefix_limit,
-            }
+        'asn': asn,
+        'name': name,
+        'comment': comment,
+        'ipv4_prefix_limit': ipv4_prefix_limit,
+        'ipv6_prefix_limit': ipv6_prefix_limit,
+    }
 
     return _call_pm_util('asn', data=data, method='POST')
 
@@ -249,8 +252,19 @@ def peeringdb_sync_asn(asn):
     return _call_pm_util(f'asn/{asn}/sync', method='POST')
 
 
-def add_direct_session(device, peer_ip, asn, import_policy=None, export_policy=None, local_ip=None,
-                          type='transit-session', comment=None, ttl=None, status=None, local_asn=36198):
+def add_direct_session(
+    device,
+    peer_ip,
+    asn,
+    import_policy=None,
+    export_policy=None,
+    local_ip=None,
+    type='transit-session',
+    comment=None,
+    ttl=None,
+    status=None,
+    local_asn=36198,
+):
     """
     Add a new direct (i.e. non-IXP) eBGP session to peering manager.
 
@@ -279,24 +293,32 @@ def add_direct_session(device, peer_ip, asn, import_policy=None, export_policy=N
 
     """
     data = {
-            'device'    : device.upper(),
-            'remote_ip' : peer_ip,
-            'local_ip'  : local_ip,
-            'peer_asn'  : asn,
-            'import'    : import_policy,
-            'export'    : export_policy,
-            'type'      : type,
-            'comment'   : comment,
-            'ttl'       : ttl,
-            'status'    : status,
-            'local_asn' : local_asn,
-            }
+        'device': device.upper(),
+        'remote_ip': peer_ip,
+        'local_ip': local_ip,
+        'peer_asn': asn,
+        'import': import_policy,
+        'export': export_policy,
+        'type': type,
+        'comment': comment,
+        'ttl': ttl,
+        'status': status,
+        'local_asn': local_asn,
+    }
 
     return _call_pm_util('sessions/direct', data=data, method='POST')
 
 
-def update_direct_session(device, peer_ip, import_policy=None, export_policy=None,
-                                 local_ip=None,  comment=None, ttl=None, status=None):
+def update_direct_session(
+    device,
+    peer_ip,
+    import_policy=None,
+    export_policy=None,
+    local_ip=None,
+    comment=None,
+    ttl=None,
+    status=None,
+):
     """
     Add a new direct (i.e. non-IXP) eBGP session to peering manager. An input
     of '0' means empty (e.g. import_policy=0 will clear the import policy).
@@ -324,15 +346,15 @@ def update_direct_session(device, peer_ip, import_policy=None, export_policy=Non
 
     """
     data = {
-            'device'    : device.upper(),
-            'remote_ip' : peer_ip,
-            'local_ip'  : local_ip,
-            'import'    : import_policy,
-            'export'    : export_policy,
-            'comment'   : comment,
-            'ttl'       : ttl,
-            'status'    : status,
-            }
+        'device': device.upper(),
+        'remote_ip': peer_ip,
+        'local_ip': local_ip,
+        'import': import_policy,
+        'export': export_policy,
+        'comment': comment,
+        'ttl': ttl,
+        'status': status,
+    }
 
     return _call_pm_util('sessions/direct', data=data, method='PUT')
 
@@ -357,8 +379,8 @@ def delete_direct_session(device, neighbor):
 
     """
     params = {
-            'device' : device.upper(),
-            'ip'     : neighbor,
-            }
+        'device': device.upper(),
+        'ip': neighbor,
+    }
 
     return _call_pm_util('sessions/direct', params=params, method='DELETE')

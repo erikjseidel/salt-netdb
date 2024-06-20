@@ -1,5 +1,5 @@
-
 import copy
+
 
 def ext_pillar(minion_id, pillar, *args, **kwargs):
 

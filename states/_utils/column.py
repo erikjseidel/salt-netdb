@@ -3,11 +3,12 @@ from .netdb import get_column, list_columns
 
 logger = logging.getLogger(__file__)
 
+
 def list():
     netdb_answer = list_columns()
 
     if not netdb_answer['result'] or 'out' not in netdb_answer:
-        netdb_answer.update({ 'error': True })
+        netdb_answer.update({'error': True})
 
     return netdb_answer
 
@@ -23,11 +24,11 @@ def get(column, delimiter=':'):
 
     netdb_answer = get_column(c.pop(0))
     if not netdb_answer['result'] or 'out' not in netdb_answer:
-        return { 
-                'comment' : netdb_answer.get('comment'),
-                'result'  : False,
-                'error'   : True,
-               }
+        return {
+            'comment': netdb_answer.get('comment'),
+            'result': False,
+            'error': True,
+        }
 
     unwind = netdb_answer['out'].get(router)
     for i in range(0, len(c)):
@@ -50,14 +51,14 @@ def pull(column):
     netdb_answer = get_column(column)
 
     if not netdb_answer['result'] or 'out' not in netdb_answer:
-        return { 
-                'comment' : netdb_answer.get('comment'),
-                'result'  : False,
-                'error'   : True,
-               }
+        return {
+            'comment': netdb_answer.get('comment'),
+            'result': False,
+            'error': True,
+        }
 
     return {
-            'comment' : netdb_answer.get('comment'),
-            'out'     : netdb_answer['out'].get(router),
-            'result'  : True,
-            }
+        'comment': netdb_answer.get('comment'),
+        'out': netdb_answer['out'].get(router),
+        'result': True,
+    }

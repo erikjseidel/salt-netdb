@@ -5,9 +5,10 @@ _PILLAR = 'netdb'
 _LOCAL = 'netdb_local'
 
 HEADERS = {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        }
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+}
+
 
 def get_grains(netdb, netdb_local):
     router = netdb['id'].upper()
@@ -65,11 +66,11 @@ def get_column(column):
     if resp.status_code in [200, 422]:
         return resp.json()
     else:
-        return { 
-                'result': False, 
-                'error': True, 
-                'comment': f'netdb api error: {resp.status_code} {resp.reason}' 
-                }
+        return {
+            'result': False,
+            'error': True,
+            'comment': f'netdb api error: {resp.status_code} {resp.reason}',
+        }
 
 
 def list_columns():
@@ -103,8 +104,8 @@ def list_columns():
     if resp.status_code == 200:
         return resp.json()
     else:
-        return { 
-                'result': False, 
-                'error': True, 
-                'comment': f'netdb api error: {resp.status_code} {resp.reason}' 
-                }
+        return {
+            'result': False,
+            'error': True,
+            'comment': f'netdb api error: {resp.status_code} {resp.reason}',
+        }

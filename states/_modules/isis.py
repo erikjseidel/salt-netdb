@@ -9,6 +9,7 @@ _COLUMN = 'igp'
 #  IS-IS disabled interfaces stored in this redis key.
 _REDIS_KEY = 'isis_disabled'
 
+
 def __virtual__():
     return __virtualname__
 
@@ -16,18 +17,18 @@ def __virtual__():
 def _get_config():
     column = __utils__['column.pull'](_COLUMN).get('out')
     if not column:
-        return { 'result': False, 'comment': 'no IGP config found for this router' }
+        return {'result': False, 'comment': 'no IGP config found for this router'}
 
     isis = column.get('isis')
     if not isis:
-        return { 'result': False, 'comment': 'no IGP config found for this router' }
+        return {'result': False, 'comment': 'no IGP config found for this router'}
 
-    return { 'result': True, 'out': isis }
+    return {'result': True, 'out': isis}
 
 
 def _is_marked_disabled(interface):
     """
-    Checks if an IS-IS interface is disabled. Wrapper around generic net_redis entry functions. 
+    Checks if an IS-IS interface is disabled. Wrapper around generic net_redis entry functions.
     """
     return __salt__['net_redis.check_entry'](_REDIS_KEY, interface)
 
@@ -87,15 +88,17 @@ def generate():
     new_ints = []
 
     for interface in isis['interfaces']:
-       if not _is_marked_disabled(interface['name'])['out']:
+        if not _is_marked_disabled(interface['name'])['out']:
             new_ints.append(interface)
 
     isis['interfaces'] = new_ints
 
-    config.update({ 
-        'out'     : isis, 
-        'comment' : 'IS-IS configuration generated for ' + __grains__['id'] 
-        })
+    config.update(
+        {
+            'out': isis,
+            'comment': 'IS-IS configuration generated for ' + __grains__['id'],
+        }
+    )
 
     return config
 
@@ -117,7 +120,7 @@ def enable_interface(interface, test=False, debug=False, force=False):
 
     .. code-block:: bash
 
-        salt sin2 isis.enable_interface tun261 
+        salt sin2 isis.enable_interface tun261
         salt sin2 isis.enable_interface tun261 test=True
         salt sin2 isis.enable_interface tun261 force=False
 
@@ -138,7 +141,9 @@ def enable_interface(interface, test=False, debug=False, force=False):
 
     isis = igp['out']
 
-    iface = next((item for item in isis['interfaces'] if item['name'] == interface), None)
+    iface = next(
+        (item for item in isis['interfaces'] if item['name'] == interface), None
+    )
 
     if not iface:
         ret = {"result": False, "comment": "IS-IS interface not found."}
@@ -146,10 +151,10 @@ def enable_interface(interface, test=False, debug=False, force=False):
         ret = _is_marked_disabled(interface)
 
         if not ret['out'] and not force:
-            ret = { 
-                "result": False, 
-                "comment": "IS-IS interface not marked as disabled in REDIS. Use force=true to commit anyway." 
-                }
+            ret = {
+                "result": False,
+                "comment": "IS-IS interface not marked as disabled in REDIS. Use force=true to commit anyway.",
+            }
         else:
             ret.update(
                 __salt__['net.load_template'](
@@ -157,7 +162,7 @@ def enable_interface(interface, test=False, debug=False, force=False):
                     template_source="set protocols isis interface {{ interface }}",
                     test=test,
                     debug=debug,
-                    commit_comment = "enable IS-IS on interface " + interface,
+                    commit_comment="enable IS-IS on interface " + interface,
                     interface=interface,
                 )
             )
@@ -186,7 +191,7 @@ def disable_interface(interface, test=False, debug=False, force=False):
 
     .. code-block:: bash
 
-        salt sin2 isis.disable_interface tun261 
+        salt sin2 isis.disable_interface tun261
         salt sin2 isis.disable_interface tun261 test=True
         salt sin2 isis.disable_interface tun261 force=False
 
@@ -207,20 +212,25 @@ def disable_interface(interface, test=False, debug=False, force=False):
 
     isis = igp['out']
 
-    iface = next((item for item in isis['interfaces'] if item['name'] == interface), None)
+    iface = next(
+        (item for item in isis['interfaces'] if item['name'] == interface), None
+    )
 
     if not iface:
         ret = {"result": False, "comment": "IS-IS interface not found."}
     elif 'passive' in iface.keys() and iface['passive']:
-        ret = {"result": False, "comment": "IS-IS passive interface cannot be disabled."}
+        ret = {
+            "result": False,
+            "comment": "IS-IS passive interface cannot be disabled.",
+        }
     else:
         ret = _is_marked_disabled(interface)
 
         if ret['out'] and not force:
-            ret = { 
-                "result": False, 
-                "comment": "IS-IS interface already marked as disabled in REDIS. Use force=true to commit anyway." 
-                }
+            ret = {
+                "result": False,
+                "comment": "IS-IS interface already marked as disabled in REDIS. Use force=true to commit anyway.",
+            }
         else:
             ret.update(
                 __salt__['net.load_template'](
@@ -228,7 +238,7 @@ def disable_interface(interface, test=False, debug=False, force=False):
                     template_source="delete protocols isis interface {{ interface }}",
                     test=test,
                     debug=debug,
-                    commit_comment = "disable IS-IS on interface " + interface,
+                    commit_comment="disable IS-IS on interface " + interface,
                     interface=interface,
                 )
             )
@@ -267,20 +277,18 @@ def overload(enable, test=False, debug=False):
         return {"result": False, "comment": "Only accepts true or false."}
 
     template = "delete protocols isis set-overload-bit"
-    comment  = "IS-IS overload bit removed"
+    comment = "IS-IS overload bit removed"
 
-    if ( enable ):
+    if enable:
         template = "set protocols isis set-overload-bit"
-        comment  = "IS-IS overload bit set"
+        comment = "IS-IS overload bit set"
 
-    return (
-        __salt__['net.load_template'](
-            template_name=name,
-            template_source=template,
-            test=test,
-            debug=debug,
-            commit_comment = comment,
-        )
+    return __salt__['net.load_template'](
+        template_name=name,
+        template_source=template,
+        test=test,
+        debug=debug,
+        commit_comment=comment,
     )
 
 
@@ -318,7 +326,9 @@ def adj():
                 data += "\t[disabled]"
             iface_list.append(data)
 
-        ret['comment'] = "salt managed IS-IS interfaces:\n--- \n" + '\n'.join( iface_list )
+        ret['comment'] = "salt managed IS-IS interfaces:\n--- \n" + '\n'.join(
+            iface_list
+        )
     else:
         if config.get('error'):
             ret['comment'] = "netdb API down"
@@ -383,7 +393,9 @@ def interface():
                 data += "\t[disabled]"
             iface_list.append(data)
 
-        ret['comment'] = "salt managed IS-IS interfaces:\n--- \n" + '\n'.join( iface_list  )
+        ret['comment'] = "salt managed IS-IS interfaces:\n--- \n" + '\n'.join(
+            iface_list
+        )
     else:
         if config.get('error'):
             ret['comment'] = "netdb API down"

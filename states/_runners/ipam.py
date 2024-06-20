@@ -1,12 +1,11 @@
-
 import logging, copy
-from netaddr   import IPSet
+from netaddr import IPSet
 from ipaddress import ip_interface, ip_network
-from copy      import deepcopy
+from copy import deepcopy
 
 __virtualname__ = 'ipam'
 
-_IPAM_UTIL_EP  = 'utility/ipam'
+_IPAM_UTIL_EP = 'utility/ipam'
 
 logger = logging.getLogger(__file__)
 
@@ -14,6 +13,7 @@ _WARNING = """This utility returns only ip space that is managed by salt-netdb. 
 it to return accurate free space, the entirety of the queried prefix must be
 managed by salt-netdb. 
 """
+
 
 def __virtual__():
     return __virtualname__
@@ -46,7 +46,7 @@ def report(device=None):
 
     """
     if device:
-        filt = { "device" : device }
+        filt = {"device": device}
     else:
         filt = None
 
@@ -73,7 +73,7 @@ def chooser(prefix):
         salt-run ipam.chooser prefix='23.181.64.0/24'
 
     """
-    params = { "prefix": prefix }
+    params = {"prefix": prefix}
 
     ret = _call_ipam_util('chooser', params=params)
 

@@ -6,6 +6,7 @@ logger = logging.getLogger(__file__)
 
 _COLUMN = 'firewall'
 
+
 def __virtual__():
     return __virtualname__
 

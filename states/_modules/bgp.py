@@ -8,6 +8,7 @@ _COLUMN = 'bgp'
 #  bgp disabled peers stored in this redis key.
 _REDIS_KEY = 'bgp_disabled'
 
+
 def __virtual__():
     return __virtualname__
 
@@ -27,7 +28,7 @@ def _get_peers():
     """
     if 'peer_groups' in bgp.keys():
         for peer_group, peer_group_data in bgp['peer_groups'].items():
-             peer_groups[peer_group] = peer_group_data
+            peer_groups[peer_group] = peer_group_data
 
     if 'neighbors' in bgp.keys():
         for neighbor, neighbor_data in bgp['neighbors'].items():
@@ -45,10 +46,14 @@ def _get_peers():
             else:
                 neighbors[neighbor]['families'] = []
 
-    ret = { 'result': True, 'out': neighbors }
+    ret = {'result': True, 'out': neighbors}
 
     if not neighbors:
-        ret = { 'result': False, 'comment': 'no salt managed peers found', 'out': neighbors }
+        ret = {
+            'result': False,
+            'comment': 'no salt managed peers found',
+            'out': neighbors,
+        }
 
     return ret
 
@@ -114,7 +119,7 @@ def generate():
         salt sin1 bgp.generate
 
     """
-    return  __utils__['column.pull'](_COLUMN)
+    return __utils__['column.pull'](_COLUMN)
 
 
 def enable(peer, test=False, debug=False, force=False):
@@ -161,15 +166,15 @@ def enable(peer, test=False, debug=False, force=False):
         if not ret.get('out') and not force:
             ret = {
                 "result": False,
-                "comment": "BGP peer not marked as disabled in REDIS. Use force=true to commit anyway."
-                }
+                "comment": "BGP peer not marked as disabled in REDIS. Use force=true to commit anyway.",
+            }
         else:
             ret.update(
                 __salt__['net.load_template'](
                     'salt://templates/bgp/enable.jinja',
                     test=test,
                     debug=debug,
-                    commit_comment = "enable BGP peer " + peer,
+                    commit_comment="enable BGP peer " + peer,
                     peer=peer,
                 )
             )
@@ -225,15 +230,15 @@ def disable(peer, test=False, debug=False, force=False):
         if ret.get('out') and not force:
             ret = {
                 "result": False,
-                "comment": "BGP peer already marked as disabled in REDIS. Use force=true to commit anyway."
-                }
+                "comment": "BGP peer already marked as disabled in REDIS. Use force=true to commit anyway.",
+            }
         else:
             ret.update(
                 __salt__['net.load_template'](
                     'salt://templates/bgp/disable.jinja',
                     test=test,
                     debug=debug,
-                    commit_comment = "disable BGP peer " + peer,
+                    commit_comment="disable BGP peer " + peer,
                     peer=peer,
                     families=families,
                 )
@@ -287,12 +292,16 @@ def summary(family='both'):
     peer_list = []
     for peer, peer_data in peers.items():
         if family == 'both' or family in peer_data['families']:
-            data = peer_fmt.format(peer, peer_data.get('peer_group', ''), peer_data.get('datasource','') )
+            data = peer_fmt.format(
+                peer, peer_data.get('peer_group', ''), peer_data.get('datasource', '')
+            )
             if peer in disabled_peers:
                 data += "\t[disabled]"
             peer_list.append(data)
 
-    comment_base= peer_fmt.format("salt managed peers", "peer_group", "datasource" ) + "\n---\n"
-    ret['comment'] = comment_base + '\n'.join( peer_list  )
+    comment_base = (
+        peer_fmt.format("salt managed peers", "peer_group", "datasource") + "\n---\n"
+    )
+    ret['comment'] = comment_base + '\n'.join(peer_list)
 
     return ret

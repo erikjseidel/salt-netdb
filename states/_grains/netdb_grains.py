@@ -7,8 +7,10 @@ __utils__ = salt.loader.utils(__opts__)
 __virtualname__ = 'netdb_grains'
 __proxyenabled__ = ['*']
 
+
 def __virtual__():
     return __virtualname__
+
 
 def netdb_grains():
     if 'netdb' in __pillar__:

@@ -1,14 +1,14 @@
-
 import logging, copy
-from netaddr   import IPSet
+from netaddr import IPSet
 from ipaddress import ip_interface, ip_network
-from copy      import deepcopy
+from copy import deepcopy
 
 __virtualname__ = "cfdns"
 
 _CFDNS_UTIL_EP = 'connectors/cfdns'
 
 logger = logging.getLogger(__file__)
+
 
 def __virtual__():
     return __virtualname__
@@ -17,7 +17,9 @@ def __virtual__():
 def _call_cfdns_util(function, data=None, method='GET', test=True):
     endpoint = f'{_CFDNS_UTIL_EP}/{function}'
 
-    return __utils__['netdb_util.call_netdb_util'](endpoint, data=data, method=method, test=test)
+    return __utils__['netdb_util.call_netdb_util'](
+        endpoint, data=data, method=method, test=test
+    )
 
 
 def synchronize(test=True):
@@ -117,12 +119,12 @@ def upsert_zone(prefix, account, zone, managed, test=True):
     if not isinstance(managed, bool):
         return {"result": False, "comment": "managed accepts true or false."}
 
-    data =  {
-            "prefix"   :   prefix,
-            "zone"     :   zone,
-            "account"  :   account,
-            "managed"  :   managed,
-            }
+    data = {
+        "prefix": prefix,
+        "zone": zone,
+        "account": account,
+        "managed": managed,
+    }
 
     return _call_cfdns_util('zones', data=data, method='POST', test=test)
 
@@ -143,6 +145,6 @@ def delete_zone(prefix):
         salt-run cfdns.delete_zone 23.181.64.0/24
 
     """
-    params = { 'prefix' : prefix }
+    params = {'prefix': prefix}
 
     return _call_cfdns_util('zones', params=params, method='DELETE')

@@ -6,6 +6,7 @@ __virtualname__ = "utility"
 
 logger = logging.getLogger(__file__)
 
+
 def __virtual__():
     return __virtualname__
 
@@ -30,7 +31,7 @@ def bgp_session_check(neighbor_ip):
     name = 'bg_session_check'
 
     okay = True
-    result = { 'result' : False }
+    result = {'result': False}
 
     try:
         family = 'ipv6' if IPAddress(neighbor_ip).version == 6 else 'ip'
@@ -53,34 +54,29 @@ def bgp_session_check(neighbor_ip):
         state = p.split(',')[0].split(' = ')[1].upper()
     else:
         return {
-                'result'  : False,
-                'out'     : ret['out'],
-                'comment' : 'BGP session not found',
-                }
+            'result': False,
+            'out': ret['out'],
+            'comment': 'BGP session not found',
+        }
 
     out = {
-            'output'      : ret['out'],
-            'state'       : state,
-            'established' : (state == 'ESTABLISHED'),
-            }
+        'output': ret['out'],
+        'state': state,
+        'established': (state == 'ESTABLISHED'),
+    }
 
-    return {
-            'result'  : True,
-            'out'     : out,
-            'comment' : 'BGP session check results'
-            }
+    return {'result': True, 'out': out, 'comment': 'BGP session check results'}
 
 
 def get_config():
-    """
-    """
+    """ """
 
     resp = __salt__['napalm.netmiko_config']('show | json')
 
     json_string = resp.split('| json')[1].split('[edit]')[0]
 
     return {
-            'result' : True,
-            'out'    : json.loads(json_string),
-            'comment' : 'Device config',
-            }
+        'result': True,
+        'out': json.loads(json_string),
+        'comment': 'Device config',
+    }

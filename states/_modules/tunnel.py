@@ -9,6 +9,7 @@ _COLUMN = 'interface'
 # Disabled tunnels stored in this redis key.
 _REDIS_KEY = 'tunnel_disabled'
 
+
 def __virtual__():
     return __virtualname__
 
@@ -16,15 +17,15 @@ def __virtual__():
 def _get_tunnels():
     interfaces = __utils__['column.pull'](_COLUMN).get('out')
     if not interfaces:
-        return { 'result' : False }
-    
+        return {'result': False}
+
     tunnels = {}
 
     for iface, iface_data in interfaces.items():
         if iface.startswith('tun'):
             tunnels[iface] = iface_data
 
-    return { 'result': True, 'out': tunnels }
+    return {'result': True, 'out': tunnels}
 
 
 def _ip2long(ip):
@@ -114,10 +115,10 @@ def generate():
             settings['key_vyos'] = _ip2long(settings['key'])
 
     return {
-            'result'  : True,
-            'out'     : tunnels,
-            'comment' : 'Tunnel interfaces generated for ' + __grains__['id']
-            }
+        'result': True,
+        'out': tunnels,
+        'comment': 'Tunnel interfaces generated for ' + __grains__['id'],
+    }
 
 
 def enable(tunnel, test=False, debug=False, force=False):
@@ -143,7 +144,7 @@ def enable(tunnel, test=False, debug=False, force=False):
 
     """
     name = 'enable_tunnel'
-    ret = { "result": False }
+    ret = {"result": False}
 
     if not tunnel:
         ret = {"result": False, "comment": "No tunnel selected."}
@@ -162,8 +163,8 @@ def enable(tunnel, test=False, debug=False, force=False):
         if not ret.get('out') and not force:
             ret = {
                 "result": False,
-                "comment": "Tunnel not marked as disabled in REDIS. Use force=true to commit anyway."
-                }
+                "comment": "Tunnel not marked as disabled in REDIS. Use force=true to commit anyway.",
+            }
         else:
             ret.update(
                 __salt__['net.load_template'](
@@ -171,7 +172,7 @@ def enable(tunnel, test=False, debug=False, force=False):
                     template_source="delete interface tunnel {{ tunnel }} disable",
                     test=test,
                     debug=debug,
-                    commit_comment = "enable tunnel " + tunnel,
+                    commit_comment="enable tunnel " + tunnel,
                     tunnel=tunnel,
                 )
             )
@@ -205,7 +206,7 @@ def disable(tunnel, test=False, debug=False, force=False):
 
     """
     name = 'disable_tunnel'
-    ret = { "result": False }
+    ret = {"result": False}
 
     if not tunnel:
         ret = {"result": False, "comment": "No tunnel selected."}
@@ -224,8 +225,8 @@ def disable(tunnel, test=False, debug=False, force=False):
         if ret.get('out') and not force:
             ret = {
                 "result": False,
-                "comment": "Tunnel is already marked disabled in REDIS. Use force=true to commit anyway."
-                }
+                "comment": "Tunnel is already marked disabled in REDIS. Use force=true to commit anyway.",
+            }
         else:
             ret.update(
                 __salt__['net.load_template'](
@@ -233,7 +234,7 @@ def disable(tunnel, test=False, debug=False, force=False):
                     template_source="set interface tunnel {{ tunnel }} disable",
                     test=test,
                     debug=debug,
-                    commit_comment = "disable tunnel " + tunnel,
+                    commit_comment="disable tunnel " + tunnel,
                     tunnel=tunnel,
                 )
             )
@@ -264,8 +265,8 @@ def display():
     """
     ret_tunnels = _get_tunnels()
 
-    ret =  __salt__['net.cli']("show interface tunnel")
-    
+    ret = __salt__['net.cli']("show interface tunnel")
+
     disabled_tunnels = _get_disabled_tunnels().get('out')
 
     if ret_tunnels.get('result'):
@@ -277,7 +278,7 @@ def display():
                 data += "\t[disabled]"
             tunnel_list.append(data)
 
-        ret['comment'] = "salt managed tunnels:\n--- \n" + '\n'.join( tunnel_list )
+        ret['comment'] = "salt managed tunnels:\n--- \n" + '\n'.join(tunnel_list)
     else:
         ret['comment'] = "netdb API down"
 

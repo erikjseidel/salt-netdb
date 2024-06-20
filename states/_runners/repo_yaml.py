@@ -6,6 +6,7 @@ _REPO_YAML_UTIL_EP = 'connectors/repo'
 
 log = logging.getLogger(__file__)
 
+
 def __virtual__():
     return __virtualname__
 
@@ -13,7 +14,9 @@ def __virtual__():
 def _call_repo_yaml_util(function, data=None, params=None, method='GET', test=True):
     endpoint = f'{_REPO_YAML_UTIL_EP}/{function}'
 
-    return __utils__['netdb_util.call_netdb_util'](endpoint, data=data, params=params, method=method, test=test)
+    return __utils__['netdb_util.call_netdb_util'](
+        endpoint, data=data, params=params, method=method, test=test
+    )
 
 
 def generate_column(column):
@@ -59,6 +62,6 @@ def reload_column(column, verbose=False):
     ret = _call_repo_yaml_util(column, method='POST')
 
     if ret['result'] and not ret['error'] and not verbose:
-        return { 'result': True }
+        return {'result': True}
 
     return ret
