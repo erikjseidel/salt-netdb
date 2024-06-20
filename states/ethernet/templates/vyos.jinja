@@ -67,7 +67,25 @@ set interfaces {{ iface_data['vlan']['parent_vyos_type'] }} {{ iface_data['vlan'
 
 {%-     endif %}
 
-{%-     if iface_data['address'] is defined %}
+{%-     if iface_data['vrf'] is defined %}
+
+{%-         if vyos_type in ['bonding', 'ethernet'] %}
+set interfaces {{ vyos_type }} {{ interface }} vrf {{ iface_data['vrf'] }}
+{%-         else %}
+set interfaces {{ iface_data['vlan']['parent_vyos_type'] }} {{ iface_data['vlan']['parent'] }} vif {{ iface_data['vlan']['id'] }} vrf {{ iface_data['vrf'] }}
+{%-         endif %}
+
+{%-     endif %}
+
+{%-     if iface_data['use_dhcp'] %}
+
+{%-             if vyos_type in ['bonding', 'ethernet'] %}
+set interfaces {{ vyos_type }} {{ interface }} address dhcp
+{%-             else %}
+set interfaces {{ iface_data['vlan']['parent_vyos_type'] }} {{ iface_data['vlan']['parent'] }} vif {{ iface_data['vlan']['id'] }} address dhcp
+{%-             endif %}
+
+{%-     elif iface_data['address'] is defined %}
 {%-         for addr, addr_data in iface_data['address'].items() %}
 
 {%-             if vyos_type in ['bonding', 'ethernet'] %}
