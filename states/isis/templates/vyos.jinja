@@ -18,7 +18,7 @@ set protocols isis net {{ isis['iso'] }}
 set protocols isis level 'level-{{ isis['level'] }}'
 set protocols isis lsp-mtu {{ isis['lsp_mtu'] }}
 
-{%- for family, data in isis['redistribute'].items() %}
+{%- for family, data in isis.get('redistribute', {}).items() %}
 {%-     if data['level_2'] is defined %}
 {%-         if data['level_2']['metric'] is defined %}
 
