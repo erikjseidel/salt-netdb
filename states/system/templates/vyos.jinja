@@ -10,6 +10,8 @@ set service snmp listen-address {{ data['cvars']['primary_ipv4'] }}
 set service snmp listen-address {{ data['cvars']['primary_ipv6'] }}
 set service snmp location {{ data['location'] }}
 
+comment service snmp 'Node snmp is SALT MANAGED'
+
 delete service lldp
 {%- for interface in data['cvars']['lldp_interfaces'] %}
 set service lldp interface {{ interface }}
@@ -19,7 +21,14 @@ set service lldp snmp enable
 set service lldp management-address {{ data['cvars']['primary_ipv4'] }}
 set service lldp management-address {{ data['cvars']['primary_ipv6'] }}
 
+comment service lldp 'Node lldp is SALT MANAGED'
+
+delete service ssh
 set service ssh
+
+comment service ssh 'Node lldp is SALT MANAGED'
 
 delete system host-name
 set system host-name {{ data['node_name']|lower }}
+
+comment system host-name 'Node host-name SALT MANAGED'
