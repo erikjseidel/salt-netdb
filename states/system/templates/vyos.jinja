@@ -1,7 +1,8 @@
 delete service snmp
-set service snmp community public network 170.39.64.0/22
-set service snmp community public network 23.181.64.0/24
-set service snmp community public network 2620:136:a000::/44
+
+{%- for prefix in data['cvars']['znsl_prefixes'] %}
+set service snmp community public network {{ prefix }}
+{%- endfor %}
 
 set service snmp community public authorization ro
 set service snmp contact {{ data['cvars']['primary_contact'] }}
