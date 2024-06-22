@@ -1,0 +1,24 @@
+delete service snmp
+set service snmp community public network 170.39.64.0/22
+set service snmp community public network 23.181.64.0/24
+set service snmp community public network 2620:136:a000::/44
+
+set service snmp community public authorization ro
+set service snmp contact {{ data['cvars']['primary_contact'] }}
+set service snmp listen-address {{ data['cvars']['primary_ipv4'] }}
+set service snmp listen-address {{ data['cvars']['primary_ipv6'] }}
+set service snmp location {{ data['location'] }}
+
+delete service lldp
+{%- for interface in data['cvars']['lldp_interfaces'] %}
+set service lldp interface {{ interface }}
+{%- endfor %}
+
+set service lldp snmp enable
+set service lldp management-address {{ data['cvars']['primary_ipv4'] }}
+set service lldp management-address {{ data['cvars']['primary_ipv6'] }}
+
+set service ssh
+
+delete system host-name
+set system host-name {{ data['node_name']|lower }}
