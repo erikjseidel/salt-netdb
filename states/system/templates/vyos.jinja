@@ -47,7 +47,7 @@ comment service dhcp-server 'Node dhcp-server is SALT MANAGED'
 delete service ssh
 set service ssh
 
-comment service ssh 'Node lldp is SALT MANAGED'
+comment service ssh 'Node ssh is SALT MANAGED'
 
 delete system name-server
 {%- for nameserver in data['cvars']['dns_servers'] %}
