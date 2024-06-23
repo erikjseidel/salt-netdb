@@ -25,24 +25,26 @@ comment service lldp 'Node lldp is SALT MANAGED'
 
 delete service dhcp-server
 
-{%- for server in data.get('dhcp_servers', []) %}
-{%- set netname = 'dhcp-net-' + loop.index|string %}
+{%- if data.get('dhcp_servers') %}
+{%-     for server in data.get('dhcp_servers') %}
+{%-         set netname = 'dhcp-net-' + loop.index|string %}
 
 set service dhcp-server shared-network {{ netname }} subnet {{ server['network'] }} default-router {{ server['router_ip'] }}
 set service dhcp-server shared-network {{ netname }} subnet {{ server['network'] }} lease 3600
 
-{%-     for nameserver in data['cvars']['dns_servers'] %}
+{%-         for nameserver in data['cvars']['dns_servers'] %}
 set service dhcp-server shared-network {{ netname }} subnet {{ server['network'] }} name-server {{ nameserver }}
-{%-     endfor %}
+{%-         endfor %}
 
-{%-     for range in server['ranges'] %}
+{%-         for range in server['ranges'] %}
 set service dhcp-server shared-network {{ netname }} subnet {{ server['network'] }} range {{ loop.index - 1 }} start {{ range['start_address'] }}
 set service dhcp-server shared-network {{ netname }} subnet {{ server['network'] }} range {{ loop.index - 1 }} stop {{ range['end_address'] }}
+{%-         endfor %}
+
 {%-     endfor %}
 
-{%- endfor %}
-
 comment service dhcp-server 'Node dhcp-server is SALT MANAGED'
+{%- endif %}
 
 delete service ssh
 set service ssh
