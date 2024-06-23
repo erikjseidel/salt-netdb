@@ -26,7 +26,7 @@ comment service lldp 'Node lldp is SALT MANAGED'
 delete service dhcp-server
 
 {%- if data.get('dhcp_servers') %}
-{%-     for server in data.get('dhcp_servers') %}
+{%-     for server in data['dhcp_servers'] %}
 {%-         set netname = 'dhcp-net-' + loop.index|string %}
 
 set service dhcp-server shared-network {{ netname }} subnet {{ server['network'] }} default-router {{ server['router_ip'] }}
