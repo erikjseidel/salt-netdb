@@ -201,6 +201,20 @@ set protocols bgp {{ local_asn }} neighbor {{ name }} address-family {{ family_n
 {%-                 endif %}
 {%-             endfor %}
 {%-         endif %}
+
+{%-         if name | ipv4 %}
+{%-             set family_name = 'ipv4' %}
+{%-         else %}
+{%-             set family_name = 'ipv6' %}
+{%-         endif %}
+
+{%-         if settings.get('reject_in') %}
+set protocols bgp {{ local_asn }} neighbor {{ name }} address-family {{ family_name }}-unicast route-map import REJECT-ALL
+{%-         endif %}
+{%-         if settings.get('reject_out') %}
+set protocols bgp {{ local_asn }} neighbor {{ name }} address-family {{ family_name }}-unicast route-map export REJECT-ALL
+{%-         endif %}
+
 {%-     endfor %}
 {%- endif %}
 
