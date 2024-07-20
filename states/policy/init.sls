@@ -5,7 +5,7 @@
 Policy_Configuration:
   netconfig.managed:
     - template_name: salt://{{ slspath }}/templates/{{ grains.os }}.jinja
-    - data: {{ data }}
+      data: {{ data }}
 
 {%- elif data['error'] %}
 policy_generate_dictionary_empty:

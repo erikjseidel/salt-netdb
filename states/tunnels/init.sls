@@ -5,7 +5,7 @@
 Tunnel_Configuration:
   netconfig.managed:
     - template_name: salt://{{ slspath }}/templates/{{ grains.os }}.jinja
-    - data: {{ data }}
+      data: {{ data }}
 
 {%- elif not data['result']  %}
 tunnel_generate_empty:

@@ -9,7 +9,7 @@ system_get_column_error:
 System_Configuration:
   netconfig.managed:
     - template_name: salt://{{ slspath }}/templates/{{ grains.os }}.jinja
-    - data: {{ data }}
+      data: {{ data }}
 
 {%- else %}
 system_column_empty:
