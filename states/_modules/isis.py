@@ -4,7 +4,7 @@ __virtualname__ = "isis"
 
 logger = logging.getLogger(__file__)
 
-_COLUMN = 'igp'
+_COLUMN = 'protocol'
 
 #  IS-IS disabled interfaces stored in this redis key.
 _REDIS_KEY = 'isis_disabled'

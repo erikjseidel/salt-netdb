@@ -118,7 +118,7 @@ set interfaces {{ iface_data['vlan']['parent_vyos_type'] }} {{ iface_data['vlan'
 {%-         endif %}
 {%-     endif %}
 
-{%-     if iface_data['policy'] is defined %}
+{%-     if version == '1.3' and  iface_data['policy'] is defined %}
 {%-         for family, policy in iface_data['policy'].items() %}
 {%-             set header = '' %}
 {%-             if family == 'ipv6' %}

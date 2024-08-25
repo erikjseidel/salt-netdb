@@ -1,15 +1,22 @@
-{%- set data = salt.column.get('device') %}
+{%- set device_data = salt.column.get('device') %}
+{%- set protocol_data = salt.column.get('protocol') %}
 
-{%- if data.get('error') %}
-system_get_column_error:
+{%- if device_data.get('error') %}
+system_get_device_column_error:
   test.fail_without_changes:
-    - name: "{{ data['comment'] }}"
+    - name: "{{ device_data['comment'] }}"
 
-{%- elif data %}
+{%- elif protocol_data.get('error') %}
+system_get_protocol_column_error:
+  test.fail_without_changes:
+    - name: "{{ protocol_data['comment'] }}"
+
+{%- elif device_data and protocol_data %}
 System_Configuration:
   netconfig.managed:
     - template_name: salt://{{ slspath }}/templates/{{ grains.os }}.jinja
-      data: {{ data }}
+      device_data: {{ device_data }}
+      protocol_data: {{ protocol_data }}
 
 {%- else %}
 system_column_empty:
