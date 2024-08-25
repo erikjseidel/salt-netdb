@@ -1,6 +1,5 @@
 {%- set fw_data = data['out'] %}
 
-
 {%- if grains.version.startswith('1.4') %}
 {%-     set version = '1.4' %}
 {%-     set ipv4_name = "ipv4 name" %}
@@ -41,17 +40,29 @@ set firewall {{ option }} {{ value }}
 
 {%- if ( fw_data['state_policy'] is defined ) %}
 {%-     if ( fw_data['state_policy']['established'] is defined ) %}
+{%-         if version == '1.4' %}
+
+set firewall global-options state-policy established action {{ fw_data['state_policy']['established'] }}
+
+{%-         else %}
 
 set firewall state-policy established action {{ fw_data['state_policy']['established'] }}
 
+{%-         endif %}
 {%-     endif %}
 {%-     if ( fw_data['state_policy']['related'] is defined ) %}
+{%-         if version == '1.4' %}
+
+set firewall global-options state-policy related action {{ fw_data['state_policy']['related'] }}
+
+{%-         else %}
 
 set firewall state-policy related action {{ fw_data['state_policy']['related'] }}
 
+{%-         endif %}
 {%-     endif %}
 {%- endif %}
-{%- if ( fw_data['mss_clamp'] is defined ) %}
+{%- if version == '1.3' and fw_data['mss_clamp'] is defined %}
 {%-     for interface in fw_data['mss_clamp']['interfaces'] %}
 
 set firewall options interface {{ interface }} adjust-mss {{ fw_data['mss_clamp']['ipv4'] }}
@@ -100,7 +111,11 @@ set firewall {{ header }} {{ policy }} rule {{ priority }} action {{ rule['actio
 {%-                     if ( rule['state'] is defined ) %}
 {%-                         for state in rule['state'] %}
 
+{%-                             if version == '1.4' %}
+set firewall {{ header }} {{ policy }} rule {{ priority }} state {{ state }}
+{%-                             else %}
 set firewall {{ header }} {{ policy }} rule {{ priority }} state {{ state }} enable
+{%-                             endif %}
 
 {%-                         endfor %}
 {%-                     endif %}
@@ -157,108 +172,85 @@ set firewall {{ header }} {{ policy }} rule {{ priority }} destination port '{{ 
 {%- endif %}
 
 {%- if version == '1.4' %}
-{%-     if fw_data['interfaces'] is defined %}
-{%-         for group, group_data in fw_data['interfaces'].items() %}
-{%-             if group_data['interfaces'] is defined %}
-{%-                 for interface in group_data['interfaces'] %}
+{%-     set forward_rule = {'ipv4': 5, 'ipv6': 5} %}
+{%-     set input_rule = {'ipv4': 5, 'ipv6': 5} %}
 
-set firewall group interface-group {{ group }} interface {{ interface }}
+{%-     for iface, iface_data in interfaces.items() %}
+{%-         for fw_type, fw_type_data in iface_data.get('firewall', {}).items() %}
+{%-             for family, rule in fw_type_data.items() %}
 
-{%-                 endfor %}
-{%-             endif %}
-{%-         endfor %}
-{%-     endif %}
-{%- endif %}
+{%-                 if fw_type == 'egress' %}
 
-{%- if ( fw_data['policy_base'] is defined ) %}
-{%-     for family in fw_data['policy_base'] %}
-{%-         for policy, policy_data in fw_data['policy_base'][family].items() %}
-{%-             if ( policy_data['default_action'] is defined ) %}
+set firewall {{ family }} forward filter rule {{ forward_rule[family] }} action jump
+set firewall {{ family }} forward filter rule {{ forward_rule[family] }} jump-target {{ rule }}
+set firewall {{ family }} forward filter rule {{ forward_rule[family] }} outbound-interface name "{{ iface }}"
 
-set firewall {{ family }} {{ policy }} filter default-action {{ policy_data['default_action'] }}
+{%-                      do forward_rule.update({ family: forward_rule[family] + 5 }) %}
 
-{%-             endif %}
-{%-             if ( policy_data['rules'] is defined ) %}
-{%-                 for rule in policy_data['rules'] %}
-{%-                     set priority = loop.index * 5 %}
+{%-                 elif fw_type == 'ingress' %}
 
-set firewall {{ family }} {{ policy }} filter rule {{ priority }} action {{ rule['action'] }}
+set firewall {{ family }} forward filter rule {{ forward_rule[family] }} action jump
+set firewall {{ family }} forward filter rule {{ forward_rule[family] }} jump-target {{ rule }}
+set firewall {{ family }} forward filter rule {{ forward_rule[family] }} inbound-interface name "{{ iface }}"
 
-{%-                     if ( rule['state'] is defined ) %}
-{%-                         for state in rule['state'] %}
+{%-                    do forward_rule.update({ family: forward_rule[family] + 5 }) %}
 
-set firewall {{ family }} {{ policy }} filter rule {{ priority }} state {{ state }} enable
+{%-                 elif fw_type == 'local' %}
 
-{%-                         endfor %}
-{%-                     endif %}
-{%-                     if ( rule['protocol'] is defined ) %}
+set firewall {{ family }} input filter rule {{ input_rule[family] }} action jump
+set firewall {{ family }} input filter rule {{ input_rule[family] }} jump-target {{ rule }}
+set firewall {{ family }} input filter rule {{ input_rule[family] }} inbound-interface name "{{ iface }}"
 
-set firewall {{ family }} {{ policy }} filter rule {{ priority }} protocol {{ rule['protocol'] }}
+{%-                    do input_rule.update({ family: input_rule[family] + 5 }) %}
 
-{%-                     endif %}
-{%-                     if ( rule['source'] is defined ) %}
-{%-                         if ( rule['source']['network_group'] is defined ) %}
+{%-                 endif %}
 
-set firewall {{ family }} {{ policy }} filter rule {{ priority }} source group network-group {{ rule['source']['network_group'] }}
-
-{%-                         endif %}
-{%-                     endif %}
-
-{%-                     if ( rule['interfaces'] is defined ) %}
-{%-                         if ( rule['interfaces']['ingress'] is defined ) %}
-
-set firewall {{ family }} {{ policy }} filter rule {{ priority }} inbound-interface interface-group {{ rule['interfaces']['ingress'] }}
-
-{%-                         endif %}
-{%-                         if ( rule['interfaces']['egress'] is defined ) %}
-
-set firewall {{ family }} {{ policy }} filter rule {{ priority }} outbound-interface interface-group {{ rule['interfaces']['egress'] }}
-
-{%-                         endif %}
-{%-                         if ( rule['policy'] is defined ) %}
-
-set firewall {{ family }} {{ policy }} filter rule {{ priority }} jump-target {{ rule['policy'] }}
-
-{%-                         endif %}
-{%-                     endif %}
-{%-                 endfor %}
-{%-             endif %}
+{%-             endfor %}
 {%-         endfor %}
 {%-     endfor %}
 
-{# Always allow internal  loopback traffic #}
-set firewall ipv6 input filter rule 1 action 'accept'
-set firewall ipv6 input filter rule 1 source address '::1/128'
-set firewall ipv4 input filter rule 1 action 'accept'
-set firewall ipv4 input filter rule 1 source address '127.0.0.0/8'
+{%-     for family in ['ipv4', 'ipv6'] %}
+{%-         if forward_rule[family] > 5 %}
+set firewall {{ family }} forward filter default-action accept
+{%-         endif %}
+{%-         if input_rule[family] > 5 %}
+set firewall {{ family }} input filter default-action accept
+{%-         endif %}
+{%-     endfor %}
 
 {%- endif %}
 
+{%- set zone_header = 'set firewall zone' %}
 {%- if version == '1.3' %}
-{%-     if ( fw_data['zone_policy'] is defined ) %}
-{%-         for zone, zone_data in fw_data['zone_policy'].items() %}
-{%-             if ( zone_data['default-action'] is defined ) %}
+{%-     set zone_header = 'set zone-policy zone' %}
+{%- endif %}
 
-set zone-policy zone {{ zone }} default-action {{ zone_data['default_action'] }}
+{%- if ( fw_data['zone_policy'] is defined ) %}
+{%-     for zone, zone_data in fw_data['zone_policy'].items() %}
+{%-         if ( zone_data['default_action'] is defined ) %}
 
-{%-             endif %}
-{%-             if ( zone_data['from'] is defined ) %}
-{%-                 for from_rule in zone_data['from'] %}
+{{ zone_header }} {{ zone }} default-action {{ zone_data['default_action'] }}
 
-set zone-policy zone {{ zone }} from {{ from_rule['zone'] }} firewall ipv6-name {{ from_rule['ipv6_ruleset'] }}
-set zone-policy zone {{ zone }} from {{ from_rule['zone'] }} firewall name {{ from_rule['ipv4_ruleset'] }}
+{%-         endif %}
+{%-         if ( zone_data['from'] is defined ) %}
+{%-             for from_rule in zone_data['from'] %}
 
-{%-                 endfor %}
-{%-             endif %}
-{%-             if ( zone_data['interfaces'] is defined ) %}
-{%-                 for interface in zone_data['interfaces'] %}
+{{ zone_header }} {{ zone }} from {{ from_rule['zone'] }} firewall ipv6-name {{ from_rule['ipv6_ruleset'] }}
+{{ zone_header }} {{ zone }} from {{ from_rule['zone'] }} firewall name {{ from_rule['ipv4_ruleset'] }}
 
-set zone-policy zone {{ zone }} interface {{ interface }}
+{%-             endfor %}
+{%-         endif %}
+{%-         if ( zone_data['interfaces'] is defined ) %}
+{%-             for interface in zone_data['interfaces'] %}
 
-{%-                 endfor %}
-{%-             endif %}
-{%-         endfor %}
-{%-     endif %}
+{{ zone_header }} {{ zone }} interface {{ interface }}
+
+{%-             endfor %}
+{%-         endif %}
+{%-     endfor %}
+{%- endif %}
+
+{%- if version == '1.3' %}
 
 comment zone-policy 'Node zone-policy is SALT MANAGED'
 

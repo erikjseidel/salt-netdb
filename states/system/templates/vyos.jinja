@@ -1,32 +1,32 @@
 delete service snmp
 
-{%- for prefix in data['cvars']['znsl_prefixes'] %}
+{%- for prefix in device_data['cvars']['znsl_prefixes'] %}
 set service snmp community public network {{ prefix }}
 {%- endfor %}
 
 set service snmp community public authorization ro
-set service snmp contact {{ data['cvars']['primary_contact'] }}
-set service snmp listen-address {{ data['cvars']['primary_ipv4'] }}
-set service snmp listen-address {{ data['cvars']['primary_ipv6'] }}
-set service snmp location {{ data['location'] }}
+set service snmp contact {{ device_data['cvars']['primary_contact'] }}
+set service snmp listen-address {{ device_data['cvars']['primary_ipv4'] }}
+set service snmp listen-address {{ device_data['cvars']['primary_ipv6'] }}
+set service snmp location {{ device_data['location'] }}
 
 comment service snmp 'Node snmp is SALT MANAGED'
 
 delete service lldp
-{%- for interface in data['cvars']['lldp_interfaces'] %}
+{%- for interface in protocol_data['lldp']['interfaces'] %}
 set service lldp interface {{ interface }}
 {%- endfor %}
 
-set service lldp snmp enable
-set service lldp management-address {{ data['cvars']['primary_ipv4'] }}
-set service lldp management-address {{ data['cvars']['primary_ipv6'] }}
+set service lldp snmp
+set service lldp management-address {{ device_data['cvars']['primary_ipv4'] }}
+set service lldp management-address {{ device_data['cvars']['primary_ipv6'] }}
 
 comment service lldp 'Node lldp is SALT MANAGED'
 
 delete service dhcp-server
 
-{%- if data.get('dhcp_servers') %}
-{%-     for server in data['dhcp_servers'] %}
+{%- if protocol_data.get('services', {}).get('dhcp_server') %}
+{%-     for server in protocol_data['services']['dhcp_server']['networks'] %}
 {%-         set netname = 'dhcp-net-' + loop.index|string %}
 
 set service dhcp-server shared-network {{ netname }} subnet {{ server['network'] }} default-router {{ server['router_ip'] }}
@@ -52,13 +52,13 @@ set service ssh
 comment service ssh 'Node ssh is SALT MANAGED'
 
 delete system name-server
-{%- for nameserver in data['cvars']['dns_servers'] %}
+{%- for nameserver in device_data['cvars']['dns_servers'] %}
 set system name-server {{ nameserver }}
 {%- endfor %}
 
 comment system name-server 'Node name-server is SALT MANAGED'
 
 delete system host-name
-set system host-name {{ data['node_name']|lower }}
+set system host-name {{ device_data['node_name']|lower }}
 
 comment system host-name 'Node host-name is SALT MANAGED'

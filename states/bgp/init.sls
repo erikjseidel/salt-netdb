@@ -5,7 +5,7 @@
 BGP_Configuration:
   netconfig.managed:
     - template_name: salt://{{ slspath }}/templates/{{ grains.os }}.jinja
-    - data: {{ data }}
+      data: {{ data }}
 
 {%- elif data['error'] %}
 bgp_generate_dictionary_empty:

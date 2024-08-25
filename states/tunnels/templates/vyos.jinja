@@ -17,6 +17,13 @@ set interfaces tunnel {{ tunnel }} address {{ addr }}
 {%-         endfor %}
 {%-     endif %}
 
+{%- if version == '1.4' and grains.id == 'AUS4' %}
+
+set interfaces tunnel {{ tunnel }} ip adjust-mss 1280
+set interfaces tunnel {{ tunnel }} ipv6 adjust-mss 1280
+
+{%- endif %}
+
 {%-     if ( tunnel_data['disabled'] ) %}
 
 set interfaces tunnel {{ tunnel }} disable

@@ -1,11 +1,13 @@
 {%- set data = salt.firewall.generate() %}
+{%- set interfaces = salt.column.get('interface') -%}
 
 {%- if data['result'] %}
 
 Firewall_Configuration:
   netconfig.managed:
     - template_name: salt://{{ slspath }}/templates/{{ grains.os }}.jinja
-    - data: {{ data }}
+      data: {{ data }}
+      interfaces: {{ interfaces }}
 
 {%- elif data['error'] %}
 firewall_generate_dictionary_empty:

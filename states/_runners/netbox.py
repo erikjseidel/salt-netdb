@@ -61,9 +61,9 @@ def generate_interfaces():
     return _call_netbox_util('interface')
 
 
-def generate_isis():
+def generate_protocol():
     """
-    Show IS-IS config generated from Netbox source in netdb format.
+    Show protocol column generated from Netbox source in netdb format.
 
     :return: a dictionary consisting of the following keys:
 
@@ -77,7 +77,7 @@ def generate_isis():
         salt-run netbox.generate_isis
 
     """
-    return _call_netbox_util('igp')
+    return _call_netbox_util('protocol')
 
 
 def generate_ebgp():
@@ -151,9 +151,9 @@ def reload_interfaces(verbose=False):
     return ret
 
 
-def reload_isis(verbose=False):
+def reload_protocol(verbose=False):
     """
-    Clear all Netbox data from netdb bgp column and load
+    Clear all Netbox data from netdb protocol column and load
     a fresh version from Netbox
 
     :param verbose: show generated column data as well
@@ -169,7 +169,7 @@ def reload_isis(verbose=False):
         salt-run netbox.reload_isis
 
     """
-    ret = _call_netbox_util('igp', method='POST')
+    ret = _call_netbox_util('protocol', method='POST')
 
     if ret['result'] and not ret['error'] and not verbose:
         return {'result': True}
