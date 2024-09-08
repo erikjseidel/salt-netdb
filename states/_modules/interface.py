@@ -15,14 +15,14 @@ def __virtual__():
     return __virtualname__
 
 
-def _ip2long(ip):
+def _ip2long(ip: str) -> int:
     """
     Convert an IP string to long
     """
     return unpack("!L", inet_aton(ip))[0]
 
 
-def get_vyos_ethernet():
+def get_vyos_ethernet() -> dict:
     """
     Generate dictionary for "state.apply ethernet". This call takes no arguments.
 
@@ -78,7 +78,7 @@ def get_vyos_ethernet():
     }
 
 
-def get_vyos_tunnels():
+def get_vyos_tunnels() -> dict:
     """
     Generate dictionary for "state.apply tunnels". This call takes no arguments.
 
@@ -110,7 +110,7 @@ def get_vyos_tunnels():
     }
 
 
-def get_vyos_loopbacks():
+def get_vyos_loopbacks() -> dict:
     """
     Generate dictionary for "state.apply loopback". This call takes no arguments.
 

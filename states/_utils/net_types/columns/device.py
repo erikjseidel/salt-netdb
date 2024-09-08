@@ -1,7 +1,7 @@
 from typing import Literal, Optional, Dict, List
 from ipaddress import IPv6Address, IPv4Address
 from pydantic import ConfigDict, Field, IPvAnyAddress, IPvAnyNetwork
-from ..base_types import BaseContainer, BaseColumnModel
+from net_types.base import BaseContainer, BaseColumnModel
 
 
 class DeviceCVars(BaseColumnModel):

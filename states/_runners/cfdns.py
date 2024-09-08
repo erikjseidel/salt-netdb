@@ -12,7 +12,7 @@ def __virtual__():
     return __virtualname__
 
 
-def synchronize(test=True):
+def synchronize(test: bool = True) -> dict:
     """
     Request update for netdb-util managed Cloudflare PTR zones.
 
@@ -45,7 +45,7 @@ def synchronize(test=True):
     )
 
 
-def get_ptrs():
+def get_ptrs() -> dict:
     """
     Return CF managed zones and PTR records.
 
@@ -66,7 +66,7 @@ def get_ptrs():
     )
 
 
-def get_zones():
+def get_zones() -> dict:
     """
     Return CF managed zones.
 
@@ -85,7 +85,9 @@ def get_zones():
     return NetdbUtilAPI(__salt__['pillar.show_pillar']()).get(_ENDPOINT.format('zones'))
 
 
-def upsert_zone(prefix, account, zone, managed, test=True):
+def upsert_zone(
+    prefix: str, account: str, zone: str, managed: bool, test: bool = True
+) -> dict:
     """
     Request addition / update of a CF managed zone identified by CIDR
 
@@ -125,7 +127,7 @@ def upsert_zone(prefix, account, zone, managed, test=True):
     )
 
 
-def delete_zone(prefix):
+def delete_zone(prefix: str) -> dict:
     """
     Request deletion of a CF managed zone identified by CIDR
 

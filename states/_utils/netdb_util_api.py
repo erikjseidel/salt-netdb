@@ -36,7 +36,12 @@ class NetdbUtilAPI:
         self.util_url = pillar[NETDB_PILLAR]['util_url']
 
     def _request(
-        self, endpoint: str, method: str, data: dict, params: dict, test: bool
+        self,
+        endpoint: str,
+        method: str,
+        data: Optional[dict],
+        params: Optional[dict],
+        test: bool,
     ) -> dict:
         """
         Internal request handler for sending requests to the NetDB util service

@@ -1,3 +1,4 @@
+from typing import Union, Optional
 import logging
 
 from netdb_util_api import NetdbUtilAPI
@@ -13,7 +14,7 @@ def __virtual__():
     return __virtualname__
 
 
-def generate_direct_sessions():
+def generate_direct_sessions() -> dict:
     """
     Show eBGP direct session config generated from Peering Manager source
     in netdb format.
@@ -35,7 +36,7 @@ def generate_direct_sessions():
     )
 
 
-def generate_ixp_sessions():
+def generate_ixp_sessions() -> dict:
     """
     Show eBGP IXP session config generated from Peering Manager source
     in netdb format.
@@ -57,7 +58,7 @@ def generate_ixp_sessions():
     )
 
 
-def reload_bgp(verbose=False):
+def reload_bgp(verbose: bool = False) -> Union[dict, bool]:
     """
     Clear all Peering Manager data from netdb bgp column and load
     a fresh version from Peering Manager.
@@ -79,10 +80,10 @@ def reload_bgp(verbose=False):
         _ENDPOINT.format('sessions/reload')
     )
 
-    return True if ret['result'] else ret
+    return True if ret['result'] and not verbose else ret
 
 
-def set_maintenance(device, neighbor):
+def set_maintenance(device: str, neighbor: str) -> dict:
     """
     Set a Peering Manager session to maintenance and synchronize netdb.
 
@@ -111,7 +112,7 @@ def set_maintenance(device, neighbor):
     )
 
 
-def set_enabled(device, neighbor):
+def set_enabled(device: str, neighbor: str) -> dict:
     """
     Set a Peering Manager session to enabled and synchronize netdb.
 
@@ -140,7 +141,13 @@ def set_enabled(device, neighbor):
     )
 
 
-def create_policy(name, policy_type, family, weight=None, comment=None):
+def create_policy(
+    name: str,
+    policy_type: str,
+    family: str,
+    weight: Optional[int] = None,
+    comment: Optional[str] = None,
+) -> dict:
     """
     Add a new policy to peering manager.
 
@@ -175,7 +182,7 @@ def create_policy(name, policy_type, family, weight=None, comment=None):
     )
 
 
-def delete_policy(name):
+def delete_policy(name: str) -> dict:
     """
     Delete a policy in peering manager.
 
@@ -201,7 +208,13 @@ def delete_policy(name):
     )
 
 
-def create_asn(asn, name, comment=None, ipv4_prefix_limit=None, ipv6_prefix_limit=None):
+def create_asn(
+    asn: int,
+    name: str,
+    comment: Optional[str] = None,
+    ipv4_prefix_limit: Optional[int] = None,
+    ipv6_prefix_limit: Optional[int] = None,
+) -> dict:
     """
     Add a new policy to peering manager.
 
@@ -236,7 +249,7 @@ def create_asn(asn, name, comment=None, ipv4_prefix_limit=None, ipv6_prefix_limi
     )
 
 
-def peeringdb_sync_asn(asn):
+def peeringdb_sync_asn(asn: int) -> dict:
     """
     Synchronize an ASN on Peering Manager from Peeringdb
 
@@ -259,18 +272,18 @@ def peeringdb_sync_asn(asn):
 
 
 def add_direct_session(
-    device,
-    peer_ip,
-    asn,
-    import_policy=None,
-    export_policy=None,
-    local_ip=None,
-    session_type='transit-session',
-    comment=None,
-    ttl=None,
-    status=None,
-    local_asn=36198,
-):
+    device: str,
+    peer_ip: str,
+    asn: int,
+    import_policy: Optional[str] = None,
+    export_policy: Optional[str] = None,
+    local_ip: Optional[str] = None,
+    session_type: str = 'transit-session',
+    comment: Optional[str] = None,
+    ttl: Optional[int] = None,
+    status: Optional[str] = None,
+    local_asn: int = 36198,
+) -> dict:
     """
     Add a new direct (i.e. non-IXP) eBGP session to peering manager.
 
@@ -318,15 +331,15 @@ def add_direct_session(
 
 
 def update_direct_session(
-    device,
-    peer_ip,
-    import_policy=None,
-    export_policy=None,
-    local_ip=None,
-    comment=None,
-    ttl=None,
-    status=None,
-):
+    device: str,
+    peer_ip: str,
+    import_policy: Optional[str] = None,
+    export_policy: Optional[str] = None,
+    local_ip: Optional[str] = None,
+    comment: Optional[str] = None,
+    ttl: Optional[int] = None,
+    status: Optional[str] = None,
+) -> dict:
     """
     Add a new direct (i.e. non-IXP) eBGP session to peering manager. An input
     of '0' means empty (e.g. import_policy=0 will clear the import policy).
@@ -369,7 +382,7 @@ def update_direct_session(
     )
 
 
-def delete_direct_session(device, neighbor):
+def delete_direct_session(device: str, neighbor: str) -> dict:
     """
     Delete a direct session in peering manager and
     synchronize netdb.
