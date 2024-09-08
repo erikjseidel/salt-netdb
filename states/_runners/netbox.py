@@ -1,25 +1,17 @@
-import logging, copy
-from netaddr import IPSet
-from ipaddress import ip_interface, ip_network
-from copy import deepcopy
+import logging
+
+from netdb_util_api import NetdbUtilAPI
 
 __virtualname__ = "netbox"
 
-_NETBOX_UTIL_EP = 'connectors/netbox'
+_ENDPOINT = 'connectors/netbox/{}'
+_SCRIPTS = 'connectors/netbox/script/{}'
 
 log = logging.getLogger(__file__)
 
 
 def __virtual__():
     return __virtualname__
-
-
-def _call_netbox_util(function, data=None, params=None, method='GET', test=True):
-    endpoint = f'{_NETBOX_UTIL_EP}/{function}'
-
-    return __utils__['netdb_util.call_netdb_util'](
-        endpoint, data=data, params=params, method=method, test=test
-    )
 
 
 def generate_devices():
@@ -38,7 +30,9 @@ def generate_devices():
         salt-run netbox.generate_devices
 
     """
-    return _call_netbox_util('device')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).get(
+        _ENDPOINT.format('device')
+    )
 
 
 def generate_interfaces():
@@ -58,7 +52,9 @@ def generate_interfaces():
         salt-run netbox.generate_interfaces sin1
 
     """
-    return _call_netbox_util('interface')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).get(
+        _ENDPOINT.format('interface')
+    )
 
 
 def generate_protocol():
@@ -74,10 +70,12 @@ def generate_protocol():
 
     .. code-block:: bash
 
-        salt-run netbox.generate_isis
+        salt-run netbox.generate_protocol
 
     """
-    return _call_netbox_util('protocol')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).get(
+        _ENDPOINT.format('protocol')
+    )
 
 
 def generate_ebgp():
@@ -96,10 +94,10 @@ def generate_ebgp():
         salt-run netbox.generate_ebgp
 
     """
-    return _call_netbox_util('ebgp')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).get(_ENDPOINT.format('ebgp'))
 
 
-def reload_devices(verbose=False):
+def reload_devices():
     """
     Clear all Netbox data from netdb device column and load
     a fresh version from Netbox
@@ -117,15 +115,14 @@ def reload_devices(verbose=False):
         salt-run netbox.reload_devices
 
     """
-    ret = _call_netbox_util('device', method='POST')
+    ret = NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(
+        _ENDPOINT.format('device'), test=False
+    )
 
-    if ret['result'] and not ret['error'] and not verbose:
-        return {'result': True}
-
-    return ret
+    return True if ret['result'] else ret
 
 
-def reload_interfaces(verbose=False):
+def reload_interfaces():
     """
     Clear all Netbox data from netdb interface column and load
     a fresh version from Netbox
@@ -143,15 +140,14 @@ def reload_interfaces(verbose=False):
         salt-run netbox.reload_interfaces
 
     """
-    ret = _call_netbox_util('interface', method='POST')
+    ret = NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(
+        _ENDPOINT.format('interface'), test=False
+    )
 
-    if ret['result'] and not ret['error'] and not verbose:
-        return {'result': True}
-
-    return ret
+    return True if ret['result'] else ret
 
 
-def reload_protocol(verbose=False):
+def reload_protocol():
     """
     Clear all Netbox data from netdb protocol column and load
     a fresh version from Netbox
@@ -166,18 +162,17 @@ def reload_protocol(verbose=False):
 
     .. code-block:: bash
 
-        salt-run netbox.reload_isis
+        salt-run netbox.reload_protocol
 
     """
-    ret = _call_netbox_util('protocol', method='POST')
+    ret = NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(
+        _ENDPOINT.format('protocol'), test=False
+    )
 
-    if ret['result'] and not ret['error'] and not verbose:
-        return {'result': True}
-
-    return ret
+    return True if ret['result'] else ret
 
 
-def reload_bgp(verbose=False):
+def reload_bgp():
     """
     Clear all Netbox data from netdb bgp column and load
     a fresh version from Netbox
@@ -195,12 +190,11 @@ def reload_bgp(verbose=False):
         salt-run netbox.reload_bgp
 
     """
-    ret = _call_netbox_util('ebgp', method='POST')
+    ret = NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(
+        _ENDPOINT.format('ebgp'), test=False
+    )
 
-    if ret['result'] and not ret['error'] and not verbose:
-        return {'result': True}
-
-    return ret
+    return True if ret['result'] else ret
 
 
 def update_ptrs(test=True):
@@ -224,7 +218,9 @@ def update_ptrs(test=True):
     if not isinstance(test, bool):
         return {"result": False, "comment": "test only accepts true or false."}
 
-    return _call_netbox_util('script/update_ptrs', method='POST', test=test)
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(
+        _SCRIPTS.format('update_ptrs'), test=test
+    )
 
 
 def update_iface_descriptions(test=True):
@@ -249,8 +245,8 @@ def update_iface_descriptions(test=True):
     if not isinstance(test, bool):
         return {"result": False, "comment": "test only accepts true or false."}
 
-    return _call_netbox_util(
-        'script/update_iface_descriptions', method='POST', test=test
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(
+        _SCRIPTS.format('update_iface_descriptions'), test=test
     )
 
 
@@ -280,7 +276,9 @@ def renumber(ipv4, ipv6, test=True):
         'ipv6_prefix': ipv6,
     }
 
-    return _call_netbox_util('script/renumber', data=data, method='POST', test=test)
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(
+        _SCRIPTS.format('renumber'), data=data, test=test
+    )
 
 
 def prune_ips(test=True):
@@ -305,7 +303,9 @@ def prune_ips(test=True):
     if not isinstance(test, bool):
         return {"result": False, "comment": "test only accepts true or false."}
 
-    return _call_netbox_util('script/prune_ips', method='POST', test=test)
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(
+        _SCRIPTS.format('prune_ips'), test=test
+    )
 
 
 def create_pni(device, interface, peer_name, cid, test=True):
@@ -344,7 +344,9 @@ def create_pni(device, interface, peer_name, cid, test=True):
 
     data = {k: v for k, v in data.items() if v}
 
-    return _call_netbox_util('script/create_pni', data=data, method='POST', test=test)
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(
+        _SCRIPTS.format('create_pni'), data=data, test=test
+    )
 
 
 def create_bundle(device, interfaces, layer3_4=False, lacp_slow=False, test=True):
@@ -392,8 +394,8 @@ def create_bundle(device, interfaces, layer3_4=False, lacp_slow=False, test=True
 
     data = {k: v for k, v in data.items() if v}
 
-    return _call_netbox_util(
-        'script/create_bundle', data=data, method='POST', test=test
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(
+        _SCRIPTS.format('create_bundle'), data=data, test=test
     )
 
 
@@ -451,6 +453,6 @@ def configure_pni(
 
     data = {k: v for k, v in data.items() if v}
 
-    return _call_netbox_util(
-        'script/configure_pni', data=data, method='POST', test=test
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(
+        _SCRIPTS.format('configure_pni'), data=data, test=test
     )

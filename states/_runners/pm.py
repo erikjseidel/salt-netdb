@@ -1,25 +1,16 @@
-import logging, copy
-from netaddr import IPSet
-from ipaddress import ip_interface, ip_network
-from copy import deepcopy
+import logging
+
+from netdb_util_api import NetdbUtilAPI
 
 __virtualname__ = "pm"
 
-_PM_UTIL_EP = 'connectors/pm'
+_ENDPOINT = 'connectors/pm/{}'
 
 log = logging.getLogger(__file__)
 
 
 def __virtual__():
     return __virtualname__
-
-
-def _call_pm_util(function, data=None, params=None, method='GET', test=True):
-    endpoint = f'{_PM_UTIL_EP}/{function}'
-
-    return __utils__['netdb_util.call_netdb_util'](
-        endpoint, data=data, params=params, method=method, test=test
-    )
 
 
 def generate_direct_sessions():
@@ -39,7 +30,9 @@ def generate_direct_sessions():
         salt-run pm.generate_direct_sessions
 
     """
-    return _call_pm_util('sessions/direct')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).get(
+        _ENDPOINT.format('sessions/direct')
+    )
 
 
 def generate_ixp_sessions():
@@ -59,7 +52,9 @@ def generate_ixp_sessions():
         salt-run pm.generate_ixp_sessions
 
     """
-    return _call_pm_util('sessions/ixp')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).get(
+        _ENDPOINT.format('sessions/ixp')
+    )
 
 
 def reload_bgp(verbose=False):
@@ -80,12 +75,11 @@ def reload_bgp(verbose=False):
         salt-run pm.reload_bgp
 
     """
-    ret = _call_pm_util('sessions/reload', method='POST')
+    ret = NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(
+        _ENDPOINT.format('sessions/reload')
+    )
 
-    if ret['result'] and not ret['error'] and not verbose:
-        return {'result': True}
-
-    return ret
+    return True if ret['result'] else ret
 
 
 def set_maintenance(device, neighbor):
@@ -112,7 +106,9 @@ def set_maintenance(device, neighbor):
         'status': 'maintenance',
     }
 
-    return _call_pm_util('sessions/status', params=params, method='PUT')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).put(
+        _ENDPOINT.format('sessions/status'), params=params
+    )
 
 
 def set_enabled(device, neighbor):
@@ -139,15 +135,17 @@ def set_enabled(device, neighbor):
         'status': 'enabled',
     }
 
-    return _call_pm_util('sessions/status', params=params, method='PUT')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).put(
+        _ENDPOINT.format('sessions/status'), params=params
+    )
 
 
-def create_policy(name, type, family, weight=None, comment=None):
+def create_policy(name, policy_type, family, weight=None, comment=None):
     """
     Add a new policy to peering manager.
 
     :param name: the name of the new policy.
-    :param type: policy type (i.e. import, export or both).
+    :param policy_type: policy type (i.e. import, export or both).
     :param family: policy family (i.e. ipv4, ipv6 or both).
     :param weight: PM policy weight
     :param comment: PM policy comment
@@ -166,13 +164,15 @@ def create_policy(name, type, family, weight=None, comment=None):
     """
     data = {
         'name': name,
-        'type': type,
+        'type': policy_type,
         'family': family,
         'weight': weight,
         'comment': comment,
     }
 
-    return _call_pm_util('policy', data=data, method='POST')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(
+        _ENDPOINT.format('policy'), data=data
+    )
 
 
 def delete_policy(name):
@@ -196,7 +196,9 @@ def delete_policy(name):
         'name': name,
     }
 
-    return _call_pm_util('policy', params=params, method='DELETE')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).delete(
+        _ENDPOINT.format('policy'), params=params
+    )
 
 
 def create_asn(asn, name, comment=None, ipv4_prefix_limit=None, ipv6_prefix_limit=None):
@@ -229,7 +231,9 @@ def create_asn(asn, name, comment=None, ipv4_prefix_limit=None, ipv6_prefix_limi
         'ipv6_prefix_limit': ipv6_prefix_limit,
     }
 
-    return _call_pm_util('asn', data=data, method='POST')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(
+        _ENDPOINT.format('asn'), data=data
+    )
 
 
 def peeringdb_sync_asn(asn):
@@ -249,7 +253,9 @@ def peeringdb_sync_asn(asn):
         salt-run pm.peeringdb_sync_asn 13335
 
     """
-    return _call_pm_util(f'asn/{asn}/sync', method='POST')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(
+        _ENDPOINT.format(f'asn/{asn}/sync')
+    )
 
 
 def add_direct_session(
@@ -259,7 +265,7 @@ def add_direct_session(
     import_policy=None,
     export_policy=None,
     local_ip=None,
-    type='transit-session',
+    session_type='transit-session',
     comment=None,
     ttl=None,
     status=None,
@@ -274,7 +280,7 @@ def add_direct_session(
     :param import_policy: Import policy (route-map) for the session
     :param export_policy: Export policy (route-map) for the session
     :param local_ip: Source IP address for BGP session
-    :param type: Session type (e.g. transit-session or peering-session)
+    :param session_type: Session type (e.g. transit-session or peering-session)
     :param comment: PM session comment
     :param ttl: eBGP multihop ttl
     :param status: Session status (i.e. enabled, disabled, or maintenance)
@@ -299,14 +305,16 @@ def add_direct_session(
         'peer_asn': asn,
         'import': import_policy,
         'export': export_policy,
-        'type': type,
+        'type': session_type,
         'comment': comment,
         'ttl': ttl,
         'status': status,
         'local_asn': local_asn,
     }
 
-    return _call_pm_util('sessions/direct', data=data, method='POST')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(
+        _ENDPOINT.format('sessions/direct'), data=data
+    )
 
 
 def update_direct_session(
@@ -356,7 +364,9 @@ def update_direct_session(
         'status': status,
     }
 
-    return _call_pm_util('sessions/direct', data=data, method='PUT')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).put(
+        _ENDPOINT.format('sessions/direct'), data=data
+    )
 
 
 def delete_direct_session(device, neighbor):
@@ -383,4 +393,6 @@ def delete_direct_session(device, neighbor):
         'ip': neighbor,
     }
 
-    return _call_pm_util('sessions/direct', params=params, method='DELETE')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).delete(
+        _ENDPOINT.format('sessions/direct'), params=params
+    )

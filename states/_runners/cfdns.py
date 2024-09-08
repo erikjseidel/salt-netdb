@@ -1,25 +1,15 @@
-import logging, copy
-from netaddr import IPSet
-from ipaddress import ip_interface, ip_network
-from copy import deepcopy
+import logging
+from netdb_util_api import NetdbUtilAPI
 
 __virtualname__ = "cfdns"
 
-_CFDNS_UTIL_EP = 'connectors/cfdns'
+_ENDPOINT = 'connectors/cfdns/{}'
 
 logger = logging.getLogger(__file__)
 
 
 def __virtual__():
     return __virtualname__
-
-
-def _call_cfdns_util(function, data=None, method='GET', test=True):
-    endpoint = f'{_CFDNS_UTIL_EP}/{function}'
-
-    return __utils__['netdb_util.call_netdb_util'](
-        endpoint, data=data, method=method, test=test
-    )
 
 
 def synchronize(test=True):
@@ -50,7 +40,9 @@ def synchronize(test=True):
     if not isinstance(test, bool):
         return {"result": False, "comment": "test only accepts true or false."}
 
-    return _call_cfdns_util('update', method='POST', test=test)
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(
+        _ENDPOINT.format('update'), test=test
+    )
 
 
 def get_ptrs():
@@ -69,7 +61,9 @@ def get_ptrs():
         salt-run cfdns.get_ptrs
 
     """
-    return _call_cfdns_util('records')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).get(
+        _ENDPOINT.format('records')
+    )
 
 
 def get_zones():
@@ -88,7 +82,7 @@ def get_zones():
         salt-run cfdns.get_zones
 
     """
-    return _call_cfdns_util('zones')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).get(_ENDPOINT.format('zones'))
 
 
 def upsert_zone(prefix, account, zone, managed, test=True):
@@ -126,7 +120,9 @@ def upsert_zone(prefix, account, zone, managed, test=True):
         "managed": managed,
     }
 
-    return _call_cfdns_util('zones', data=data, method='POST', test=test)
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(
+        _ENDPOINT.format('zones'), data=data, test=test
+    )
 
 
 def delete_zone(prefix):
@@ -147,4 +143,6 @@ def delete_zone(prefix):
     """
     params = {'prefix': prefix}
 
-    return _call_cfdns_util('zones', params=params, method='DELETE')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).delete(
+        _ENDPOINT.format('zones'), params=params
+    )

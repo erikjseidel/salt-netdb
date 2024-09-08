@@ -1,4 +1,5 @@
-import re, logging, json
+import logging
+import json
 from netaddr import IPAddress
 from netaddr.core import AddrFormatError
 
@@ -28,8 +29,6 @@ def bgp_session_check(neighbor_ip):
         salt sin2 utility.bgp_session_check 23.181.64.98
 
     """
-    name = 'bg_session_check'
-
     okay = True
     result = {'result': False}
 
@@ -69,7 +68,9 @@ def bgp_session_check(neighbor_ip):
 
 
 def get_config():
-    """ """
+    """
+    Get VyOS config in native jsonified format
+    """
 
     resp = __salt__['napalm.netmiko_config']('show | json')
 

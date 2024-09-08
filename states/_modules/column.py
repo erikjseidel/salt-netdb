@@ -2,6 +2,11 @@ import logging
 
 __virtualname__ = "column"
 
+from salt.exceptions import SaltException
+
+from netdb_api import NetdbAPI
+from exceptions.netdb_exceptions import ColumnNotFoundException
+
 logger = logging.getLogger(__file__)
 
 
@@ -20,19 +25,12 @@ def ls():
         salt sin1 column.ls
 
     """
-    columns = __utils__['column.list']()
-
-    if columns.get('error'):
-        return columns
-
-    return columns.get('out')
+    return NetdbAPI(__pillar__).list_columns()['out']
 
 
 def get(column, delimiter=':'):
     """
-    Retrieves a column from netdb for the device. Netdb 'config' endpoint is
-    called so netdb will return the fully built configuration for this device
-    instead of a raw column.
+    Retrieves a column from netdb for the device.
 
     The value can also represent a value in a nested dict using a ":" delimiter
     for the dict. This means that if a dict in the column looks like this::
@@ -57,17 +55,52 @@ def get(column, delimiter=':'):
     """
     if isinstance(delimiter, int):
         delimiter = str(delimiter)
+
     elif not isinstance(delimiter, str):
         return {
             'result': False,
-            'error': True,
             'comment': 'delimiter must be a string or char',
         }
 
-    ret = __utils__['column.get'](column, delimiter)
+    c = column.split(delimiter)
+    column = c.pop(0)
 
-    if not ret or (isinstance(ret, dict) and ret.get('result') == False):
+    try:
+        unwind = NetdbAPI(__pillar__).get_column(__grains__['node_name'], column)
+    except ColumnNotFoundException:
+        # We follow pillar convention of returning an empty list if no column found
         return []
+
+    for i, elem in enumerate(c):
+        unwind = unwind.get(elem)
+        if not isinstance(unwind, dict):
+            if i < len(c) - 1:
+                return None
+            break
+
+    return unwind or []
+
+
+def pull(column):
+    """
+    Retrieves a raw column from netdb for the device in a manner suitable for state
+    applies. No column filtering is done. In case of non-existent or empty column a
+    a SaltException is raised.
+
+    CLI Example::
+
+    .. code-block:: bash
+
+        salt sin1 column.pull interface
+
+    """
+    try:
+        ret = NetdbAPI(__pillar__).get_column(__grains__['node_name'], column)
+    except ColumnNotFoundException as e:
+        raise SaltException(str(e)) from e
+
+    if not ret:
+        raise SaltException(f'{column}: Empty column returned')
 
     return ret
 
@@ -90,26 +123,15 @@ def keys(column, delimiter=':'):
         salt sin2 column.keys interface:tun372
 
     """
-    if isinstance(delimiter, int):
-        delimiter = str(delimiter)
-    elif not isinstance(delimiter, str):
-        return {
-            'result': False,
-            'error': True,
-            'comment': 'delimiter must be a string or char',
-        }
-
-    ret = __utils__['column.get'](column, delimiter)
+    ret = get(column, delimiter)
 
     if isinstance(ret, dict):
-        if ret.get('result') == False:
-            return []
-        return list(ret.keys())
-    else:
-        return []
+        return ret if ret.get('result') is False else list(ret.keys())
+
+    return []
 
 
-def item(*arg, **kwarg):
+def item(*args, **kwargs):
     """
     Return one or more columns from netdb.
 
@@ -125,23 +147,20 @@ def item(*arg, **kwarg):
 
     """
     out = {}
-    delimiter = kwarg.pop('delimiter', ':')
+    delimiter = kwargs.pop('delimiter', ':')
 
-    if isinstance(delimiter, int):
-        delimiter = str(delimiter)
-    elif not isinstance(delimiter, str):
-        return {
-            'result': False,
-            'error': True,
-            'comment': 'delimiter must be a string or char',
-        }
+    for column in args:
+        out[column] = get(column, delimiter)
+        if isinstance(out[column], dict) and out[column].get('result') is False:
+            #
+            # False result means that there was an issue with the delimiter. Return the
+            # error message.
+            #
+            return out[column]
 
-    for column in arg:
-        data = __utils__['column.get'](column, delimiter)
-
-        if not data or (isinstance(data, dict) and data.get('result') == False):
+        if not out[column] or (
+            isinstance(out[column], dict) and out[column].get('result') is False
+        ):
             out[column] = []
-        else:
-            out[column] = data
 
     return out

@@ -1,7 +1,4 @@
-import logging, copy
-from netaddr import IPSet
-from ipaddress import ip_interface, ip_network
-from copy import deepcopy
+import logging
 
 __virtualname__ = "ripestat"
 

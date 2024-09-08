@@ -1,22 +1,16 @@
 import logging
 
+from netdb_util_api import NetdbUtilAPI
+
 __virtualname__ = "repo_yaml"
 
-_REPO_YAML_UTIL_EP = 'connectors/repo'
+_ENDPOINT = 'connectors/repo/{}'
 
 log = logging.getLogger(__file__)
 
 
 def __virtual__():
     return __virtualname__
-
-
-def _call_repo_yaml_util(function, data=None, params=None, method='GET', test=True):
-    endpoint = f'{_REPO_YAML_UTIL_EP}/{function}'
-
-    return __utils__['netdb_util.call_netdb_util'](
-        endpoint, data=data, params=params, method=method, test=test
-    )
 
 
 def generate_column(column):
@@ -37,7 +31,7 @@ def generate_column(column):
         salt-run repo_yaml.generate_column bgp
 
     """
-    return _call_repo_yaml_util(column)
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).get(_ENDPOINT.format(column))
 
 
 def reload_column(column, verbose=False):
@@ -59,9 +53,6 @@ def reload_column(column, verbose=False):
         salt-run repo_yaml.reload_column bgp
 
     """
-    ret = _call_repo_yaml_util(column, method='POST')
+    ret = NetdbUtilAPI(__salt__['pillar.show_pillar']()).post(_ENDPOINT.format(column))
 
-    if ret['result'] and not ret['error'] and not verbose:
-        return {'result': True}
-
-    return ret
+    return True if ret['result'] and not ret['error'] and not verbose else ret

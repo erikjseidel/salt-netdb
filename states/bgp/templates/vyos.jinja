@@ -1,5 +1,5 @@
 
-{%- set bgp_data = data['out'] %}
+{%- set bgp_data = data %}
 {%- if grains.version.startswith('1.4') %}
 {%-     set local_asn = '' %}
 {%-     set system_asn  = bgp_data['options']['asn'] %}
