@@ -1,7 +1,7 @@
 
 delete protocols isis
 
-{%- set isis = data['out'] %}
+{%- set isis = protocol['isis'] %}
 {%- for interface in isis['interfaces'] %}
 {%-     if interface['passive'] is defined and interface['passive'] %}
 

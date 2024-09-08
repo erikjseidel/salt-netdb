@@ -13,13 +13,17 @@ def __virtual__():
 
 
 def netdb_grains():
+    """
+    Load NetDB grains. Currently just overlays the device column onto the
+    grains dict.
+    """
     if 'netdb' in __pillar__:
-        netdb = __pillar__['netdb']
+        netdb_id = __pillar__['netdb']['id']
 
-        netdb_local = __pillar__.get('netdb_local')
-
-        grains = __utils__['netdb.get_grains'](netdb, netdb_local)
-        grains['id'] = netdb['id']
+        grains = __utils__['netdb_api.get_api'](__pillar__).get_column(
+            netdb_id, 'device'
+        )
+        grains['id'] = netdb_id
 
         return grains
 

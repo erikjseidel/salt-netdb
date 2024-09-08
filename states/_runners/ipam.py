@@ -1,7 +1,4 @@
-import logging, copy
-from netaddr import IPSet
-from ipaddress import ip_interface, ip_network
-from copy import deepcopy
+import logging
 
 __virtualname__ = 'ipam'
 
@@ -25,14 +22,13 @@ def _call_ipam_util(function, params=None):
     return __utils__['netdb_util.call_netdb_util'](endpoint, params=params)
 
 
-def report(device=None):
+def report():
     """
     Show salt managed IP addresses.
 
     A sorted list of salt managed IP addresses is also displayed in the
     comment.
 
-    :param device: Limit report to only the specified device.
     :return: a dictionary consisting of the following keys:
 
        * result: (bool) True if IP addresses returned; false otherwise
@@ -42,14 +38,8 @@ def report(device=None):
     .. code-block:: bash
 
         salt-run ipam.report
-        salt-run ipam.report sin1
 
     """
-    if device:
-        filt = {"device": device}
-    else:
-        filt = None
-
     return _call_ipam_util('report')
 
 
