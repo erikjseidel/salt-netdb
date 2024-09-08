@@ -1,8 +1,10 @@
 import logging
 
+from netdb_util_api import NetdbUtilAPI
+
 __virtualname__ = "ripestat"
 
-_PM_UTIL_EP = 'utility/ripe'
+_ENDPOINT = 'utility/ripe/{}'
 
 log = logging.getLogger(__file__)
 
@@ -11,32 +13,25 @@ def __virtual__():
     return __virtualname__
 
 
-def _call_ripe_util(function, data=None, params=None, method='GET', test=True):
-    endpoint = f'{_PM_UTIL_EP}/{function}'
-
-    return __utils__['netdb_util.call_netdb_util'](
-        endpoint, data=data, params=params, method=method, test=test
-    )
-
-
-def get_paths(prefix):
+def get_paths(prefix: str) -> dict:
     """
-    Set a Peering Manager session to maintenance and synchronize netdb.
+    Get matching AS paths frpm RipeStat API.
 
-    :param device: the device where session is located.
-    :param neighbor: the neighbor IP address of the session.
+    :param prefix: The prefix to check
     :return: a dictionary consisting of the following keys:
 
        * result: (bool) True if successful; false otherwise
-       * out: a dict of synchronization results
+       * out: a dict of RipeStat results
 
     CLI Example::
 
     .. code-block:: bash
 
-        salt-run pm.set_maintenance sin2 169.254.169.254
+        salt-run ripestat.get_paths 23.181.64.0/24
 
     """
     params = {'prefix': prefix}
 
-    return _call_ripe_util('paths', params=params)
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).get(
+        _ENDPOINT.format('paths'), params=params
+    )

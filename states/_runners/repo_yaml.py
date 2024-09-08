@@ -1,3 +1,4 @@
+from typing import Union
 import logging
 
 from netdb_util_api import NetdbUtilAPI
@@ -13,7 +14,7 @@ def __virtual__():
     return __virtualname__
 
 
-def generate_column(column):
+def generate_column(column: str) -> dict:
     """
     Show generated column data for repo_yaml column repository
     in netdb format.
@@ -34,7 +35,7 @@ def generate_column(column):
     return NetdbUtilAPI(__salt__['pillar.show_pillar']()).get(_ENDPOINT.format(column))
 
 
-def reload_column(column, verbose=False):
+def reload_column(column: str, verbose: bool = False) -> Union[dict, bool]:
     """
     Clear all repo_yaml column data from a netdb column and load
     a fresh version from repository

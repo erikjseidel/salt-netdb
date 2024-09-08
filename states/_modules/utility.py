@@ -3,6 +3,8 @@ import json
 from netaddr import IPAddress
 from netaddr.core import AddrFormatError
 
+from net_types.salt import salt_dict_return
+
 __virtualname__ = "utility"
 
 logger = logging.getLogger(__file__)
@@ -12,7 +14,7 @@ def __virtual__():
     return __virtualname__
 
 
-def bgp_session_check(neighbor_ip):
+def bgp_session_check(neighbor_ip: str) -> dict:
     """
     Check the state of a BGP session.
 
@@ -29,55 +31,46 @@ def bgp_session_check(neighbor_ip):
         salt sin2 utility.bgp_session_check 23.181.64.98
 
     """
-    okay = True
-    result = {'result': False}
-
     try:
         family = 'ipv6' if IPAddress(neighbor_ip).version == 6 else 'ip'
 
     except AddrFormatError:
-        okay = False
-        result['comment'] = 'invalid IP address input'
-
-    if not okay:
-        return result
+        return salt_dict_return(comment='Invalid IP address input')
 
     command = f'show {family} bgp neighbor {neighbor_ip} | match "BGP state"'
 
     ret = __salt__['net.cli'](command)
     if not ret['result']:
-        return ret
+        return salt_dict_return(comment='net.cli false return', out=ret)
 
-    p = ret['out'][command]
-    if p:
+    if p := ret['out'][command]:
         state = p.split(',')[0].split(' = ')[1].upper()
+
     else:
-        return {
-            'result': False,
-            'out': ret['out'],
-            'comment': 'BGP session not found',
-        }
+        return salt_dict_return(comment='BGP sessions not found', out=ret['out'])
 
-    out = {
-        'output': ret['out'],
-        'state': state,
-        'established': (state == 'ESTABLISHED'),
-    }
-
-    return {'result': True, 'out': out, 'comment': 'BGP session check results'}
+    return salt_dict_return(
+        result=True,
+        comment='BGP session check results',
+        out={
+            'session_out': ret['out'],
+            'state': state,
+            'established': (state == 'ESTABLISHED'),
+        },
+    )
 
 
-def get_config():
+def get_config() -> dict:
     """
     Get VyOS config in native jsonified format
     """
 
-    resp = __salt__['napalm.netmiko_config']('show | json')
-
-    json_string = resp.split('| json')[1].split('[edit]')[0]
-
-    return {
-        'result': True,
-        'out': json.loads(json_string),
-        'comment': 'Device config',
-    }
+    return salt_dict_return(
+        result=True,
+        out=json.loads(
+            __salt__['napalm.netmiko_config']('show | json')
+            .split('| json')[1]
+            .split('[edit]')[0]
+        ),
+        comment='Device config',
+    )

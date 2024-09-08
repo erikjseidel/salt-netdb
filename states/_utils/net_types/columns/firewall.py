@@ -1,6 +1,6 @@
 from typing import Literal, Optional, Dict, List
 from pydantic import Field, IPvAnyInterface
-from ..base_types import BaseContainer, BaseColumnModel
+from net_types.base import BaseContainer, BaseColumnModel
 
 
 class FirewallOptions(BaseColumnModel):

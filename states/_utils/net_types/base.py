@@ -25,8 +25,8 @@ class BaseContainer(BaseColumnModel):
 
     """
 
-    __flat__ = False
-    __categories__ = []
+    __flat__: bool = False
+    __categories__: list = []
 
     @property
     def categories(self):

@@ -12,7 +12,7 @@ def __virtual__():
     return __virtualname__
 
 
-def netdb_grains():
+def netdb_grains() -> dict:
     """
     Load NetDB grains. Currently just overlays the device column onto the
     grains dict.

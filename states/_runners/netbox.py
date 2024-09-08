@@ -1,3 +1,4 @@
+from typing import Union, Optional
 import logging
 
 from netdb_util_api import NetdbUtilAPI
@@ -14,7 +15,7 @@ def __virtual__():
     return __virtualname__
 
 
-def generate_devices():
+def generate_devices() -> dict:
     """
     Show devices generated from Netbox source in netdb format.
 
@@ -35,7 +36,7 @@ def generate_devices():
     )
 
 
-def generate_interfaces():
+def generate_interfaces() -> dict:
     """
     Show interfaces generated from Netbox source in netdb format for a device.
 
@@ -57,7 +58,7 @@ def generate_interfaces():
     )
 
 
-def generate_protocol():
+def generate_protocol() -> dict:
     """
     Show protocol column generated from Netbox source in netdb format.
 
@@ -78,7 +79,7 @@ def generate_protocol():
     )
 
 
-def generate_ebgp():
+def generate_ebgp() -> dict:
     """
     Show internal eBGP config generated from Netbox source in netdb format.
 
@@ -97,7 +98,7 @@ def generate_ebgp():
     return NetdbUtilAPI(__salt__['pillar.show_pillar']()).get(_ENDPOINT.format('ebgp'))
 
 
-def reload_devices():
+def reload_devices() -> Union[dict, bool]:
     """
     Clear all Netbox data from netdb device column and load
     a fresh version from Netbox
@@ -122,7 +123,7 @@ def reload_devices():
     return True if ret['result'] else ret
 
 
-def reload_interfaces():
+def reload_interfaces() -> Union[dict, bool]:
     """
     Clear all Netbox data from netdb interface column and load
     a fresh version from Netbox
@@ -147,7 +148,7 @@ def reload_interfaces():
     return True if ret['result'] else ret
 
 
-def reload_protocol():
+def reload_protocol() -> Union[dict, bool]:
     """
     Clear all Netbox data from netdb protocol column and load
     a fresh version from Netbox
@@ -172,7 +173,7 @@ def reload_protocol():
     return True if ret['result'] else ret
 
 
-def reload_bgp():
+def reload_bgp() -> Union[dict, bool]:
     """
     Clear all Netbox data from netdb bgp column and load
     a fresh version from Netbox
@@ -197,7 +198,7 @@ def reload_bgp():
     return True if ret['result'] else ret
 
 
-def update_ptrs(test=True):
+def update_ptrs(test: bool = True) -> dict:
     """
     Trigger the Netbox update_ptrs (Regularize PTR Fields) script.
 
@@ -223,7 +224,7 @@ def update_ptrs(test=True):
     )
 
 
-def update_iface_descriptions(test=True):
+def update_iface_descriptions(test: bool = True) -> dict:
     """
     Trigger the Netbox update_iface_descriptions (Regularize Interface Descriptions)
     script.
@@ -250,7 +251,7 @@ def update_iface_descriptions(test=True):
     )
 
 
-def renumber(ipv4, ipv6, test=True):
+def renumber(ipv4: str, ipv6: str, test: bool = True) -> dict:
     """
     Trigger the Netbox renumber (Regenerate IPs renumber phase) script. Creates
     new IPs on targeted interfaces, marks old IPs for pruning.
@@ -281,7 +282,7 @@ def renumber(ipv4, ipv6, test=True):
     )
 
 
-def prune_ips(test=True):
+def prune_ips(test: bool = True) -> dict:
     """
     Trigger the Netbox prune_ips (Regenerate IPs cleanup) script. Cleans up old
     IPs, regularizes new IP tags after IP generation process done.
@@ -308,7 +309,9 @@ def prune_ips(test=True):
     )
 
 
-def create_pni(device, interface, peer_name, cid, test=True):
+def create_pni(
+    device: str, interface: str, peer_name: str, cid: str, test: bool = True
+) -> dict:
     """
     Trigger the Netbox add_pni (create a new PNI) script. Creates new IPs on the
     interface as well. Sub-interfaces for VLAN tagged PNIs will be dynamically
@@ -349,7 +352,13 @@ def create_pni(device, interface, peer_name, cid, test=True):
     )
 
 
-def create_bundle(device, interfaces, layer3_4=False, lacp_slow=False, test=True):
+def create_bundle(
+    device: str,
+    interfaces: str,
+    layer3_4: bool = False,
+    lacp_slow: bool = False,
+    test: bool = True,
+) -> dict:
     """
     Trigger the Netbox add_pni (create a new PNI) script. Creates new IPs on the
     interface as well. Sub-interfaces for VLAN tagged PNIs will be dynamically
@@ -400,15 +409,15 @@ def create_bundle(device, interfaces, layer3_4=False, lacp_slow=False, test=True
 
 
 def configure_pni(
-    device,
-    interface,
-    peer_asn,
-    vlan_id=None,
-    vcid=None,
-    autogen_ips=False,
-    ipv4=None,
-    ipv6=None,
-    test=True,
+    device: str,
+    interface: str,
+    peer_asn: int,
+    vlan_id: Optional[int] = None,
+    vcid: Optional[str] = None,
+    autogen_ips: bool = False,
+    ipv4: Optional[str] = None,
+    ipv6: Optional[str] = None,
+    test: bool = True,
 ):
     """
     Trigger the Netbox add_pni (create a new PNI) script. Creates new IPs on the

@@ -74,13 +74,13 @@ class NetdbAPI:
 
         return ret_dict
 
-    def list_columns(self) -> list:
+    def list_columns(self) -> dict:
         """
         Return a list of available columns.
         """
         return self.get('column')
 
-    def get_column(self, router: str, column: str) -> Optional[dict]:
+    def get_column(self, router: str, column: str) -> dict:
         """
         Retrieves a column from netdb for the device. Used by column module
         'get', 'items' and 'keys' functions.

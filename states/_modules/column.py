@@ -1,3 +1,4 @@
+from typing import Union, Any
 import logging
 
 __virtualname__ = "column"
@@ -14,7 +15,7 @@ def __virtual__():
     return __virtualname__
 
 
-def ls():
+def ls() -> list:
     """
     Calls netdb for a list of available columns and returns this list.
 
@@ -28,7 +29,7 @@ def ls():
     return NetdbAPI(__pillar__).list_columns()['out']
 
 
-def get(column, delimiter=':'):
+def get(column: str, delimiter: str = ':') -> Any:
     """
     Retrieves a column from netdb for the device.
 
@@ -72,7 +73,7 @@ def get(column, delimiter=':'):
         return []
 
     for i, elem in enumerate(c):
-        unwind = unwind.get(elem)
+        unwind = unwind.get(elem)  # type: ignore
         if not isinstance(unwind, dict):
             if i < len(c) - 1:
                 return None
@@ -81,7 +82,7 @@ def get(column, delimiter=':'):
     return unwind or []
 
 
-def pull(column):
+def pull(column: str) -> dict:
     """
     Retrieves a raw column from netdb for the device in a manner suitable for state
     applies. No column filtering is done. In case of non-existent or empty column a
@@ -105,7 +106,7 @@ def pull(column):
     return ret
 
 
-def keys(column, delimiter=':'):
+def keys(column: str, delimiter: str = ':') -> Union[list, dict]:
     """
     Attempt to retrieve a list of keys from the named value from column.
 
@@ -131,7 +132,7 @@ def keys(column, delimiter=':'):
     return []
 
 
-def item(*args, **kwargs):
+def item(*args, **kwargs) -> Union[dict, list]:
     """
     Return one or more columns from netdb.
 

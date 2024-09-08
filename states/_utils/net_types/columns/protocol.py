@@ -1,7 +1,7 @@
 from typing import Literal, Dict, Optional, List
 from ipaddress import IPv4Address, IPv4Network
 from pydantic import Field
-from ..base_types import BaseContainer, BaseColumnModel
+from net_types.base import BaseContainer, BaseColumnModel
 
 
 class DHCPRange(BaseColumnModel):

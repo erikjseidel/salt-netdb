@@ -1,13 +1,13 @@
-import copy
+from copy import deepcopy
 
 
-def ext_pillar(minion_id, pillar, *args, **kwargs):
+def ext_pillar(*args, **kwargs):
     """
     Load netdb pillar from opts
     """
 
     pillar = {}
     if 'netdb' in __opts__:
-        pillar['netdb'] = copy.deepcopy(__opts__['netdb'])
+        pillar['netdb'] = deepcopy(__opts__['netdb'])
 
     return pillar

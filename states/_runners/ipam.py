@@ -1,8 +1,9 @@
 import logging
+from netdb_util_api import NetdbUtilAPI
 
-__virtualname__ = 'ipam'
+__virtualname__ = "ipam"
 
-_IPAM_UTIL_EP = 'utility/ipam'
+_ENDPOINT = 'utility/ipam/{}'
 
 logger = logging.getLogger(__file__)
 
@@ -16,13 +17,7 @@ def __virtual__():
     return __virtualname__
 
 
-def _call_ipam_util(function, params=None):
-    endpoint = f'{_IPAM_UTIL_EP}/{function}'
-
-    return __utils__['netdb_util.call_netdb_util'](endpoint, params=params)
-
-
-def report():
+def report() -> dict:
     """
     Show salt managed IP addresses.
 
@@ -40,10 +35,12 @@ def report():
         salt-run ipam.report
 
     """
-    return _call_ipam_util('report')
+    return NetdbUtilAPI(__salt__['pillar.show_pillar']()).get(
+        _ENDPOINT.format('report')
+    )
 
 
-def chooser(prefix):
+def chooser(prefix: str) -> dict:
     """
     Show available prefixes / free IP space within a given (super)prefix.
 
@@ -65,7 +62,9 @@ def chooser(prefix):
     """
     params = {"prefix": prefix}
 
-    ret = _call_ipam_util('chooser', params=params)
+    ret = NetdbUtilAPI(__salt__['pillar.show_pillar']()).get(
+        _ENDPOINT.format('chooser'), params=params
+    )
 
     ret.update({'notice': _WARNING})
 
