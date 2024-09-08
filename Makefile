@@ -22,4 +22,4 @@ lint:
 .PHONY: type-check
 type-check:
 	docker run --rm -v $(WORKING_DIR)/$(APP_DIR):$(APP_DIR)/ -v $(WORKING_DIR)/.mypy.ini:$(MYPYRC) $(TOOLS_IMAGE) \
-	       mypy -p _modules -p _runners -p _pillar -p _grains  --config-file $(MYPYRC)
+	       mypy --namespace-packages --explicit-package-bases $(APP_DIR) --config-file $(MYPYRC)
